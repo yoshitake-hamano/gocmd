@@ -6,4 +6,5 @@ all:
 
 .PHONY: test
 test: all
-	cd test; ./main.sh
+	go test ./...
+	cd test; ./testMain.sh
