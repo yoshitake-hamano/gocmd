@@ -13,3 +13,17 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+
+# for emacs
+.emacs.desktop
+.emacs.desktop.lock
+*~
+
+go.sum
+
+# Output direcoty
+bin/
+
+# for cmd/yacc
+parser.go
+*.output
