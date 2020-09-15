@@ -16,6 +16,25 @@ type NumExpr struct {
 type IdentExpr struct {
     literal string
 }
+type TypeExpr struct {
+    literal string
+}
+type PairExprs struct {
+    lhd Expression
+    rhd Expression
+}
+type Arg struct {
+    arg Expression
+}
+type PairArgs struct {
+    lhd Expression
+    rhd Expression
+}
+type FunctionDeclaration struct {
+    typ  Expression
+    name Expression
+    args Expression
+}
 %}
 
 %union{
@@ -24,7 +43,10 @@ type IdentExpr struct {
 }
 
 %type<expr> top
+%type<expr> typ
+%type<expr> name
 %type<expr> expr
+%type<expr> arg
 %token<token> NUMBER IDENT
 
 %left ','
@@ -32,10 +54,32 @@ type IdentExpr struct {
 %%
 
 top
+    : expr '(' arg ')'
+    {
+        $$ = FunctionDeclaration{typ: $1, args: $3}
+        yylex.(*Lexer).result = $$
+    }
+
+typ
     : expr
     {
         $$ = $1
-        yylex.(*Lexer).result = $$
+    }
+
+name
+    : IDENT
+    {
+        $$ = IdentExpr{literal: $1.literal}
+    }
+
+arg
+    : expr
+    {
+        $$ = Arg{arg: $1}
+    }
+    | arg ',' arg
+    {
+        $$ = PairArgs{lhd: $1, rhd: $3}
     }
 
 expr
@@ -46,6 +90,10 @@ expr
     | IDENT
     {
         $$ = IdentExpr{literal: $1.literal}
+    }
+    | expr expr
+    {
+        $$ = PairExprs{lhd: $1, rhd: $2}
     }
 
 %%

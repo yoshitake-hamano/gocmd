@@ -46,8 +46,7 @@ function testHello() {
 }
 
 function testYacc() {
-    # s=`${YACC} "void sum(int a, int b)"`
-    s=`${YACC} "void sum int a, int b"`
+    s=`${YACC} "void sum(int a, int b)"`
     result=${?}
     echo "${s}"
     assertIntEquals 0 ${result}
