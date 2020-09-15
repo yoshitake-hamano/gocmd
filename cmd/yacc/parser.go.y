@@ -10,27 +10,14 @@ type Token struct {
 }
 
 type Expression interface{}
-type NumExpr struct {
-    literal string
-}
-type IdentExpr struct {
-    literal string
-}
-type TypeExpr struct {
-    literal string
-}
-type Exprs struct {
-    exprs []Expression
-}
 type Arg struct {
-    arg Expression
-}
-type Args struct {
-    args []Arg
+    typ  []string
+    name string
 }
 type FunctionDeclaration struct {
-    typ  Expression
-    args Expression
+    typ  []string
+    name string
+    args []Arg
 }
 %}
 
@@ -51,42 +38,47 @@ type FunctionDeclaration struct {
 top
     : expr '(' arg ')'
     {
-        $$ = FunctionDeclaration{typ: $1, args: $3}
+        expr := $1.([]string)
+        typ  := expr[0:len(expr)-1]
+        name := expr[len(expr)-1]
+
+        $$ = FunctionDeclaration{typ: typ, name: name, args: $3.([]Arg)}
         yylex.(*Lexer).result = $$
     }
 
 arg
     : expr
     {
-        arg := Arg{arg: $1}
-        $$ = Args{args: []Arg{arg}}
+        expr := $1.([]string)
+        typ  := expr[0:len(expr)-1]
+        name := expr[len(expr)-1]
+
+        arg := Arg{typ: typ, name: name}
+        $$ = []Arg{arg}
     }
     | arg ',' arg
     {
-        lhd := $1.(Args)
-        rhd := $3.(Args)
-        $$ = Args{args: append(lhd.args, rhd.args...)}
+        lhd := $1.([]Arg)
+        rhd := $3.([]Arg)
+        $$ = append(lhd, rhd...)
     }
 
 expr
     : NUMBER
     {
-        expr := NumExpr{literal: $1.literal}
-        $$ = Exprs{exprs: []Expression{expr}}
+        expr := string($1.literal)
+        $$ = []string{expr}
     }
     | IDENT
     {
-        debugPrintf("expr %v\n", $1)
-        expr := IdentExpr{literal: $1.literal}
-        $$ = Exprs{exprs: []Expression{expr}}
+        expr := string($1.literal)
+        $$ = []string{expr}
     }
     | expr expr
     {
-        debugPrintf("expr expr %v %v\n", $1, $2)
-
-        lhd := $1.(Exprs)
-        rhd := $2.(Exprs)
-        $$ = Exprs{exprs: append(lhd.exprs, rhd.exprs...)}
+        lhd := $1.([]string)
+        rhd := $2.([]string)
+        $$ = append(lhd, rhd...)
     }
 
 %%
