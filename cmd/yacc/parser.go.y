@@ -4,12 +4,12 @@
 // https://cs.wmich.edu/~gupta/teaching/cs4850/sumII06/The%20syntax%20of%20C%20in%20Backus-Naur%20form.htm
 package main
 
-type Expression interface{}
 type Token struct {
     token   int
     literal string
 }
 
+type Expression interface{}
 type NumExpr struct {
     literal string
 }
@@ -19,9 +19,8 @@ type IdentExpr struct {
 type TypeExpr struct {
     literal string
 }
-type PairExprs struct {
-    lhd Expression
-    rhd Expression
+type Exprs struct {
+    exprs []Expression
 }
 type Arg struct {
     arg Expression
@@ -64,7 +63,6 @@ arg
     }
     | arg ',' arg
     {
-        debugPrintf("arg,arg %v,%v\n", $1, $3)
         lhd := $1.(Args)
         rhd := $3.(Args)
         $$ = Args{args: append(lhd.args, rhd.args...)}
@@ -73,17 +71,22 @@ arg
 expr
     : NUMBER
     {
-        $$ = NumExpr{literal: $1.literal}
+        expr := NumExpr{literal: $1.literal}
+        $$ = Exprs{exprs: []Expression{expr}}
     }
     | IDENT
     {
         debugPrintf("expr %v\n", $1)
-        $$ = IdentExpr{literal: $1.literal}
+        expr := IdentExpr{literal: $1.literal}
+        $$ = Exprs{exprs: []Expression{expr}}
     }
     | expr expr
     {
         debugPrintf("expr expr %v %v\n", $1, $2)
-        $$ = PairExprs{lhd: $1, rhd: $2}
+
+        lhd := $1.(Exprs)
+        rhd := $2.(Exprs)
+        $$ = Exprs{exprs: append(lhd.exprs, rhd.exprs...)}
     }
 
 %%
