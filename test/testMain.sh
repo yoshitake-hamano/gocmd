@@ -37,21 +37,28 @@ function assertIntEquals() {
     fi
 }
 
+function testReturnsOK() {
+    s=`${1} "${2}"`
+    result=${?}
+    echo "${s}"
+    assertIntEquals 0 ${result}
+}
+
 assertStringEquals "abc" "abc"
 
-function testHello() {
+function testSuiteHello() {
     s=`${HELLO}`
     assertIntEquals 0 ${?}
     assertStringEquals "Hello" "${s}"
 }
 
-function testYacc() {
-    s=`${YACC} "void sum(int a, int b)"`
-    result=${?}
-    echo "${s}"
-    assertIntEquals 0 ${result}
-    assertStringEquals "main.BinOpExpr{left:main.NumExpr{literal:\"1\"}, operator:43, right:main.NumExpr{literal:\"2\"}}" "${s}"
+function testSuiteYacc() {
+    testReturnsOK ${YACC} "void sum(void)"
+    testReturnsOK ${YACC} "void sum(int a)"
+    testReturnsOK ${YACC} "void sum(int)"
+    testReturnsOK ${YACC} "unsigned int sum(int a, int b)"
+    testReturnsOK ${YACC} "unsigned int sum(int a, int *b)"
 }
 
-testHello
-testYacc
+testSuiteHello
+testSuiteYacc
