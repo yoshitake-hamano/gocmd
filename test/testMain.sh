@@ -46,9 +46,11 @@ function testHello() {
 }
 
 function testYacc() {
-    s=`${YACC} "1 + 2"`
+    # s=`${YACC} "void sum(int a, int b)"`
+    s=`${YACC} "void sum int a, int b"`
+    result=${?}
     echo "${s}"
-    assertIntEquals 0 ${?}
+    assertIntEquals 0 ${result}
     assertStringEquals "main.BinOpExpr{left:main.NumExpr{literal:\"1\"}, operator:43, right:main.NumExpr{literal:\"2\"}}" "${s}"
 }
 

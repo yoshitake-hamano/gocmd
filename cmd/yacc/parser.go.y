@@ -13,10 +13,8 @@ type Token struct {
 type NumExpr struct {
     literal string
 }
-type BinOpExpr struct {
-    left     Expression
-    operator rune
-    right    Expression
+type IdentExpr struct {
+    literal string
 }
 %}
 
@@ -25,15 +23,15 @@ type BinOpExpr struct {
     expr  Expression
 }
 
-%type<expr> program
+%type<expr> top
 %type<expr> expr
-%token<token> NUMBER
+%token<token> NUMBER IDENT
 
-%left '+'
+%left ','
 
 %%
 
-program
+top
     : expr
     {
         $$ = $1
@@ -45,9 +43,9 @@ expr
     {
         $$ = NumExpr{literal: $1.literal}
     }
-    | expr '+' expr
+    | IDENT
     {
-        $$ = BinOpExpr{left: $1, operator: '+', right: $3}
+        $$ = IdentExpr{literal: $1.literal}
     }
 
 %%
