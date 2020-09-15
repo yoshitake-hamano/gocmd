@@ -26,13 +26,11 @@ type PairExprs struct {
 type Arg struct {
     arg Expression
 }
-type PairArgs struct {
-    lhd Expression
-    rhd Expression
+type Args struct {
+    args []Arg
 }
 type FunctionDeclaration struct {
     typ  Expression
-    name Expression
     args Expression
 }
 %}
@@ -43,8 +41,6 @@ type FunctionDeclaration struct {
 }
 
 %type<expr> top
-%type<expr> typ
-%type<expr> name
 %type<expr> expr
 %type<expr> arg
 %token<token> NUMBER IDENT
@@ -60,26 +56,18 @@ top
         yylex.(*Lexer).result = $$
     }
 
-typ
-    : expr
-    {
-        $$ = $1
-    }
-
-name
-    : IDENT
-    {
-        $$ = IdentExpr{literal: $1.literal}
-    }
-
 arg
     : expr
     {
-        $$ = Arg{arg: $1}
+        arg := Arg{arg: $1}
+        $$ = Args{args: []Arg{arg}}
     }
     | arg ',' arg
     {
-        $$ = PairArgs{lhd: $1, rhd: $3}
+        debugPrintf("arg,arg %v,%v\n", $1, $3)
+        lhd := $1.(Args)
+        rhd := $3.(Args)
+        $$ = Args{args: append(lhd.args, rhd.args...)}
     }
 
 expr
@@ -89,10 +77,12 @@ expr
     }
     | IDENT
     {
+        debugPrintf("expr %v\n", $1)
         $$ = IdentExpr{literal: $1.literal}
     }
     | expr expr
     {
+        debugPrintf("expr expr %v %v\n", $1, $2)
         $$ = PairExprs{lhd: $1, rhd: $2}
     }
 
