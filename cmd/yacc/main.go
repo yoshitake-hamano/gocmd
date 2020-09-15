@@ -12,7 +12,7 @@ type Lexer struct {
 	result Expression
 }
 
-const debug = true
+const debug = false
 
 func debugPrintf(format string, a ...interface{}) (n int, err error) {
 	if debug != true {
@@ -31,6 +31,9 @@ func (l *Lexer) Lex(lval *yySymType) int {
 	case scanner.Ident:
 		token = IDENT
 		debugPrintf("Lex() returns IDENT,")
+	case '*':
+		token = IDENT
+		debugPrintf("Lex() returns *,")
 	default:
 		debugPrintf("Lex() returns other(perhaps ascii or EOF),")
 	}
@@ -47,19 +50,21 @@ func main() {
 	l := new(Lexer)
 	l.Init(strings.NewReader(os.Args[1]))
 	yyParse(l)
-	fmt.Printf("%#v\n", l.result)
+	fd := l.result.(FunctionDeclaration)
 
-	fmt.Printf("%s", os.Args[1])
-	fmt.Printf(`
-{
-}`)
 
-// 	r := l.result
-// 	switch r.(type) {
-// 	case BinOpExpr:
-// 		left := r.(BinOpExpr).left
-// 		right := r.(BinOpExpr).right
-// 		fmt.Printf("%#v\n", left.(NumExpr).literal)
-// 		fmt.Printf("%#v\n", right)
-// 	}
+	fmt.Printf("%s\n", os.Args[1])
+	fmt.Printf("\n")
+
+
+	fmt.Printf("  fd name = %s\n", fd.name)
+	for _, typ := range fd.typ {
+		fmt.Printf("    fd type : %s\n", typ)
+	}
+	for _, arg := range fd.args {
+		fmt.Printf("      arg name = %s\n", arg.name)
+		for _, typ := range arg.typ {
+			fmt.Printf("        arg type : %s\n", typ)
+		}
+	}
 }
