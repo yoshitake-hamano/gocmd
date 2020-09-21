@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
-	"text/scanner"
+	"io"
 	"os"
 	"strings"
+	"text/scanner"
 )
 
 type Lexer struct {
@@ -46,25 +48,112 @@ func (l *Lexer) Error(e string) {
 	panic(e)
 }
 
+func IsVoid(types []string) bool {
+	result := false
+	for _, typ := range types {
+		if typ == "*" {
+			return false
+		}
+		if typ == "void" {
+			result = true
+		}
+	}
+	return result
+}
+
+func (a Arg) String() string {
+	var sb strings.Builder
+	for _, typ := range a.typ {
+		sb.WriteString(typ)
+		sb.WriteString(" ")
+	}
+	sb.WriteString(a.name)
+	return sb.String()
+}
+
+func (a Arg) WriteExpectMock(w io.Writer) {
+	fmt.Fprintf(w, ".withParameter(\"%s\", %s)", a.name, a.name)
+}
+
+func (a Arg) WriteActualMock(w io.Writer) {
+	fmt.Fprintf(w, ".withParameter(\"%s\", %s)", a.name, a.name)
+}
+
+func (fd FunctionDeclaration) WriteExpectFunction(w io.Writer) {
+	bw := bufio.NewWriter(w)
+	bw.WriteString("void expect_")
+	bw.WriteString(fd.name)
+	bw.WriteString("(")
+	for i, arg := range fd.args {
+		if i != 0 {
+			bw.WriteString(", ")
+		}
+		bw.WriteString(arg.String())
+	}
+	if ! IsVoid(fd.typ) {
+		bw.WriteString(", ")
+		bw.WriteString(strings.Join(fd.typ, " "))
+		bw.WriteString(" retval")
+	}
+	bw.WriteString(") {\n")
+	bw.WriteString("{\n")
+
+	fmt.Fprintf(bw, "    mock().expectOneCall(\"%s\")", fd.name)
+	for _, arg := range fd.args {
+		bw.WriteString("\n          ")
+		arg.WriteExpectMock(bw)
+	}
+	if ! IsVoid(fd.typ) {
+		bw.WriteString("\n          ")
+		bw.WriteString(".andReturnValue(retval)")
+	}
+	bw.WriteString(";\n")
+
+	bw.WriteString("}\n")
+
+	bw.Flush()
+}
+
+func (fd FunctionDeclaration) WriteActualFunction(w io.Writer) {
+	bw := bufio.NewWriter(w)
+	bw.WriteString(strings.Join(fd.typ, " "))
+	bw.WriteString(" ")
+	bw.WriteString(fd.name)
+	bw.WriteString("(")
+	for i, arg := range fd.args {
+		if i != 0 {
+			bw.WriteString(", ")
+		}
+		bw.WriteString(arg.String())
+	}
+	bw.WriteString(") {\n")
+	bw.WriteString("{\n")
+
+	fmt.Fprintf(bw, "    mock().actualOneCall(\"%s\")", fd.name)
+	for _, arg := range fd.args {
+		bw.WriteString("\n          ")
+		arg.WriteActualMock(bw)
+
+	}
+	if ! IsVoid(fd.typ) {
+		bw.WriteString("\n          ")
+		bw.WriteString(".returnValue()")
+	}
+	bw.WriteString(";\n")
+
+	bw.WriteString("}\n")
+
+
+	bw.Flush()
+}
+
 func main() {
 	l := new(Lexer)
 	l.Init(strings.NewReader(os.Args[1]))
 	yyParse(l)
 	fd := l.result.(FunctionDeclaration)
 
-
-	fmt.Printf("%s\n", os.Args[1])
-	fmt.Printf("\n")
-
-
-	fmt.Printf("  fd name = %s\n", fd.name)
-	for _, typ := range fd.typ {
-		fmt.Printf("    fd type : %s\n", typ)
-	}
-	for _, arg := range fd.args {
-		fmt.Printf("      arg name = %s\n", arg.name)
-		for _, typ := range arg.typ {
-			fmt.Printf("        arg type : %s\n", typ)
-		}
-	}
+	fd.WriteExpectFunction(os.Stdout)
+	fmt.Fprintf(os.Stdout, "\n")
+	fd.WriteActualFunction(os.Stdout)
 }
