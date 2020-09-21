@@ -40,6 +40,7 @@ function assertIntEquals() {
 function testReturnsOK() {
     s=`${1} "${2}"`
     result=${?}
+    echo "${1} ${2}"
     echo "${s}"
     assertIntEquals 0 ${result}
 }
