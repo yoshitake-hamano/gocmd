@@ -2,7 +2,7 @@
 
 BIN_DIR=../bin
 HELLO=${BIN_DIR}/hello
-YACC=${BIN_DIR}/yacc
+CREATEMOCK=${BIN_DIR}/createmock
 
 function dumpStack() {
     local i=0
@@ -77,14 +77,14 @@ function testSuiteHello() {
     assertStringEquals "Hello" "${s}"
 }
 
-function testSuiteYacc() {
-    assertReturnsOK ${YACC} "void sum(void)"
-    assertReturnsOK ${YACC} "void sum(int a)"
-    assertReturnsOK ${YACC} "void sum(int)"
-    assertReturnsOK ${YACC} "unsigned int sum(int a, int b)"
-    assertReturnsOK ${YACC} "unsigned int sum(int a, int *b)"
+function testSuiteCreatemock() {
+    assertReturnsOK ${CREATEMOCK} "void sum(void)"
+    assertReturnsOK ${CREATEMOCK} "void sum(int a)"
+    assertReturnsOK ${CREATEMOCK} "void sum(int)"
+    assertReturnsOK ${CREATEMOCK} "unsigned int sum(int a, int b)"
+    assertReturnsOK ${CREATEMOCK} "unsigned int sum(int a, int *b)"
 
-    assertExec ${YACC} "void sum(int a)" 0 'void expect_sum(int a)
+    assertExec ${CREATEMOCK} "void sum(int a)" 0 'void expect_sum(int a)
 {
     mock().expectOneCall("sum")
           .withParameter("a", a);
@@ -98,4 +98,4 @@ void sum(int a)
 }
 
 testSuiteHello
-testSuiteYacc
+testSuiteCreatemock
