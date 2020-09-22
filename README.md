@@ -3,7 +3,7 @@
 ## createmock
 
 ```
-(defun create-mock (function-declare)
+(defun insert-mock (function-declare)
   (interactive "sFunction Declare: ")
   (let ((command (format "createmock \"%s\"" function-declare)))
     (insert (shell-command-to-string command))))
