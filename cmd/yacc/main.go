@@ -95,7 +95,7 @@ func (fd FunctionDeclaration) WriteExpectFunction(w io.Writer) {
 		bw.WriteString(strings.Join(fd.typ, " "))
 		bw.WriteString(" retval")
 	}
-	bw.WriteString(") {\n")
+	bw.WriteString(")\n")
 	bw.WriteString("{\n")
 
 	fmt.Fprintf(bw, "    mock().expectOneCall(\"%s\")", fd.name)
@@ -126,7 +126,7 @@ func (fd FunctionDeclaration) WriteActualFunction(w io.Writer) {
 		}
 		bw.WriteString(arg.String())
 	}
-	bw.WriteString(") {\n")
+	bw.WriteString(")\n")
 	bw.WriteString("{\n")
 
 	fmt.Fprintf(bw, "    mock().actualOneCall(\"%s\")", fd.name)
