@@ -17,12 +17,27 @@ function flunk() {
     exit 1
 }
 
+function diffString() {
+    expect="${1}"
+    actual="${2}"
+
+    expectFile=`mktemp`
+    echo "${expect}" > ${expectFile}
+    actualFile=`mktemp`
+    echo "${actual}" > ${actualFile}
+    echo "-: expect, +: actual"
+    diff -u ${expectFile} ${actualFile}
+    rm ${expectFile} ${actualFile}
+}
+
 function assertStringEquals() {
     expect="${1}"
     actual="${2}"
     if [ "${expect}" != "${actual}" ]; then
         echo "assertStringEquals fails"
         echo "expect = ${expect}, actual = ${actual}"
+
+        diffString "${expect}" "${actual}"
         flunk
     fi
 }
@@ -37,12 +52,21 @@ function assertIntEquals() {
     fi
 }
 
-function testReturnsOK() {
+function assertReturnsOK() {
+    s=`${1} "${2}"`
+    result=${?}
+    echo "${1}"
+    echo "${s}"
+    assertIntEquals 0 ${result}
+}
+
+function assertExec() {
     s=`${1} "${2}"`
     result=${?}
     echo "${1} ${2}"
     echo "${s}"
-    assertIntEquals 0 ${result}
+    assertIntEquals ${3} ${result}
+    assertStringEquals "${4}" "${s}"
 }
 
 assertStringEquals "abc" "abc"
@@ -54,11 +78,23 @@ function testSuiteHello() {
 }
 
 function testSuiteYacc() {
-    testReturnsOK ${YACC} "void sum(void)"
-    testReturnsOK ${YACC} "void sum(int a)"
-    testReturnsOK ${YACC} "void sum(int)"
-    testReturnsOK ${YACC} "unsigned int sum(int a, int b)"
-    testReturnsOK ${YACC} "unsigned int sum(int a, int *b)"
+    assertReturnsOK ${YACC} "void sum(void)"
+    assertReturnsOK ${YACC} "void sum(int a)"
+    assertReturnsOK ${YACC} "void sum(int)"
+    assertReturnsOK ${YACC} "unsigned int sum(int a, int b)"
+    assertReturnsOK ${YACC} "unsigned int sum(int a, int *b)"
+
+    assertExec ${YACC} "void sum(int a)" 0 'void expect_sum(int a)
+{
+    mock().expectOneCall("sum")
+          .withParameter("a", a);
+}
+
+void sum(int a)
+{
+    mock().actualOneCall("sum")
+          .withParameter("a", a);
+}'
 }
 
 testSuiteHello
