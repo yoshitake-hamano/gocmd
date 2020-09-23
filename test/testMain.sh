@@ -2,7 +2,7 @@
 
 BIN_DIR=../bin
 HELLO=${BIN_DIR}/hello
-CREATEMOCK=${BIN_DIR}/createmock
+CREATEMOCK="${BIN_DIR}/createmock -arg"
 
 function dumpStack() {
     local i=0
@@ -78,13 +78,13 @@ function testSuiteHello() {
 }
 
 function testSuiteCreatemock() {
-    assertReturnsOK ${CREATEMOCK} "void sum(void)"
-    assertReturnsOK ${CREATEMOCK} "void sum(int a)"
-    assertReturnsOK ${CREATEMOCK} "void sum(int)"
-    assertReturnsOK ${CREATEMOCK} "unsigned int sum(int a, int b)"
-    assertReturnsOK ${CREATEMOCK} "unsigned int sum(int a, int *b)"
+    assertReturnsOK "${CREATEMOCK}" "void sum(void)"
+    assertReturnsOK "${CREATEMOCK}" "void sum(int a)"
+    assertReturnsOK "${CREATEMOCK}" "void sum(int)"
+    assertReturnsOK "${CREATEMOCK}" "unsigned int sum(int a, int b)"
+    assertReturnsOK "${CREATEMOCK}" "unsigned int sum(int a, int *b)"
 
-    assertExec ${CREATEMOCK} "void sum(int a)" 0 'void expect_sum(int a)
+    assertExec "${CREATEMOCK}" "void sum(int a)" 0 'void expect_sum(int a)
 {
     mock().expectOneCall("sum")
           .withParameter("a", a);
@@ -92,7 +92,7 @@ function testSuiteCreatemock() {
 
 void sum(int a)
 {
-    mock().actualOneCall("sum")
+    mock().actualCall("sum")
           .withParameter("a", a);
 }'
 }

@@ -8,3 +8,4 @@ all:
 test: all
 	go test ./...
 	cd test; ./testMain.sh
+	cd test/cpputest; $(MAKE) test

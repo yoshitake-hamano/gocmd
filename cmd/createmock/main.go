@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -36,6 +37,9 @@ func (l *Lexer) Lex(lval *yySymType) int {
 	case '*':
 		token = IDENT
 		debugPrintf("Lex() returns *,")
+	case ';':
+		token = 0
+		debugPrintf("Lex() returns ;,")
 	default:
 		debugPrintf("Lex() returns other(perhaps ascii or EOF),")
 	}
@@ -129,7 +133,11 @@ func (fd FunctionDeclaration) WriteActualFunction(w io.Writer) {
 	bw.WriteString(")\n")
 	bw.WriteString("{\n")
 
-	fmt.Fprintf(bw, "    mock().actualOneCall(\"%s\")", fd.name)
+	if ! IsVoid(fd.typ) {
+		fmt.Fprintf(bw, "    return mock().actualCall(\"%s\")", fd.name)
+	} else {
+		fmt.Fprintf(bw, "    mock().actualCall(\"%s\")", fd.name)
+	}
 	for _, arg := range fd.args {
 		bw.WriteString("\n          ")
 		arg.WriteActualMock(bw)
@@ -137,7 +145,7 @@ func (fd FunctionDeclaration) WriteActualFunction(w io.Writer) {
 	}
 	if ! IsVoid(fd.typ) {
 		bw.WriteString("\n          ")
-		bw.WriteString(".returnValue()")
+		bw.WriteString(".returnIntValue()")
 	}
 	bw.WriteString(";\n")
 
@@ -148,8 +156,25 @@ func (fd FunctionDeclaration) WriteActualFunction(w io.Writer) {
 }
 
 func main() {
+	var (
+		file = flag.String("file", "", "the c header file")
+		arg  = flag.String("arg",  "", "the c function declaration")
+		r io.Reader
+	)
+	flag.Parse()
+
 	l := new(Lexer)
-	l.Init(strings.NewReader(os.Args[1]))
+	if *file != "" {
+		var err error
+		r, err = os.Open(*file)
+		if err != nil {
+			panic(err)
+		}
+	}
+	if *arg != "" {
+		r = strings.NewReader(*arg)
+	}
+	l.Init(r)
 	yyParse(l)
 	fd := l.result.(FunctionDeclaration)
 
