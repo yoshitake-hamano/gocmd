@@ -55,7 +55,7 @@ function assertIntEquals() {
 function assertReturnsOK() {
     s=`${1} "${2}"`
     result=${?}
-    echo "${1}"
+    echo "${1} ${2}"
     echo "${s}"
     assertIntEquals 0 ${result}
 }
