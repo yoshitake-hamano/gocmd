@@ -34,14 +34,11 @@ func (l *Lexer) Lex(lval *yySymType) int {
 	case scanner.Ident:
 		token = IDENT
 		debugPrintf("Lex() returns IDENT, ")
-	case scanner.EOF:
-		token = EOF
-		debugPrintf("Lex() returns EOF, ")
 	case '*':
 		token = IDENT
 		debugPrintf("Lex() returns *, ")
 	default:
-		debugPrintf("Lex() returns other(perhaps ascii), ")
+		debugPrintf("Lex() returns other(perhaps ascii or EOF), ")
 	}
 	lval.token = Token{literal: l.TokenText()}
 	debugPrintf("literal = %s\n", lval.token.literal)
@@ -175,6 +172,7 @@ func main() {
 		r = strings.NewReader(*arg)
 	}
 	l.Init(r)
+	yyErrorVerbose = true
 	yyParse(l)
 	fds := l.result.([]FunctionDeclaration)
 

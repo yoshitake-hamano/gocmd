@@ -52,7 +52,7 @@ top
         $$ = append(lhd, rhd...)
         yylex.(*Lexer).result = $$
     }
-    | top ';' EOF
+    | top ';'
     {
         debugPrintf("Syntax: top = top(%v) ; EOF\n", $1)
         $$ = $1.([]FunctionDeclaration)

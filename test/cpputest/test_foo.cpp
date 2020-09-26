@@ -7,7 +7,7 @@
 #include "foo.h"
 #include "mock_foo.cpp"
 
-TEST_GROUP(TestFoo)
+TEST_GROUP(TestMain)
 {
     TEST_SETUP()
     {
@@ -19,10 +19,19 @@ TEST_GROUP(TestFoo)
     }
 };
 
-TEST(TestFoo, TestSuccess)
+TEST(TestMain, TestFooSuccess)
 {
     expect_foo(0, 1, 2);
     int result = foo(0, 1);
+    CHECK_EQUAL(2, result);
+
+    mock().checkExpectations();
+}
+
+TEST(TestMain, TestPiyoSuccess)
+{
+    expect_piyo(0, 1, 2);
+    int result = piyo(0, 1);
     CHECK_EQUAL(2, result);
 
     mock().checkExpectations();
