@@ -26,22 +26,22 @@ func debugPrintf(format string, a ...interface{}) (n int, err error) {
 
 func (l *Lexer) Lex(lval *yySymType) int {
 	token := int(l.Scan())
-	debugPrintf("Scan() returns %d,", token)
+	debugPrintf("Lex:    Scan() returns %d, ", token)
 	switch token {
 	case scanner.Int:
 		token = NUMBER
-		debugPrintf("Lex() returns NUMBER,")
+		debugPrintf("Lex() returns NUMBER, ")
 	case scanner.Ident:
 		token = IDENT
-		debugPrintf("Lex() returns IDENT,")
+		debugPrintf("Lex() returns IDENT, ")
+	case scanner.EOF:
+		token = EOF
+		debugPrintf("Lex() returns EOF, ")
 	case '*':
 		token = IDENT
-		debugPrintf("Lex() returns *,")
-	case ';':
-		token = 0
-		debugPrintf("Lex() returns ;,")
+		debugPrintf("Lex() returns *, ")
 	default:
-		debugPrintf("Lex() returns other(perhaps ascii or EOF),")
+		debugPrintf("Lex() returns other(perhaps ascii), ")
 	}
 	lval.token = Token{literal: l.TokenText()}
 	debugPrintf("literal = %s\n", lval.token.literal)
@@ -176,9 +176,11 @@ func main() {
 	}
 	l.Init(r)
 	yyParse(l)
-	fd := l.result.(FunctionDeclaration)
+	fds := l.result.([]FunctionDeclaration)
 
-	fd.WriteExpectFunction(os.Stdout)
-	fmt.Fprintf(os.Stdout, "\n")
-	fd.WriteActualFunction(os.Stdout)
+	for _, fd := range fds {
+		fd.WriteExpectFunction(os.Stdout)
+		fmt.Fprintf(os.Stdout, "\n")
+		fd.WriteActualFunction(os.Stdout)
+	}
 }
