@@ -1,6 +1,6 @@
 #!/bin/sh
 
-BIN_DIR=../bin
+BIN_DIR=../../bin
 HELLO=${BIN_DIR}/hello
 CREATEMOCK="${BIN_DIR}/createmock -arg"
 
