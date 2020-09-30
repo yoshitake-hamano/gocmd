@@ -15,13 +15,13 @@ type Lexer struct {
 	result Expression
 }
 
-const debug = false
+var vervose = flag.Bool("vervose", false, "print vervose message")
 
 func debugPrintf(format string, a ...interface{}) (n int, err error) {
-	if debug != true {
+	if *vervose != true {
 		return 0, nil
 	}
-	return fmt.Printf(format, a...)
+	return fmt.Fprintf(os.Stderr, format, a...)
 }
 
 func (l *Lexer) Lex(lval *yySymType) int {

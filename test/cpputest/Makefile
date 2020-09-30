@@ -20,7 +20,7 @@ clean:
 	$(RM) $(MOCK_HEADERS) $(TARGETS)
 
 mock_%.cpp: %.h
-	../../bin/createmock -file $^ > $@
+	../../bin/createmock -vervose -file $^ > $@
 
 test_%: test_%.cpp $(MOCK_HEADERS)
 	$(GPP) $(CPPFLAGS) -o $@ $<
