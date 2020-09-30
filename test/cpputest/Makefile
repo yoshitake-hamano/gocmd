@@ -1,3 +1,8 @@
+# This is a regular comment, that will not be displayed
+
+## Targets
+## 
+
 
 HEADERS      := $(wildcard *.h)
 MOCK_HEADERS := $(HEADERS:%.h=mock_%.cpp)
@@ -7,16 +12,16 @@ CPPFLAGS     := -g -Wall -lcpputest  -lcpputestext
 GPP          := g++
 
 .PHONY: test
-test: $(TARGETS)
+test: $(TARGETS) ## Test
 	for cmd in $^; do \
 		./$$cmd; \
 	done
 
 .PHONY: mock
-mock: $(MOCK_HEADERS)
+mock: $(MOCK_HEADERS) ## Build mock
 
 .PHONY: clean
-clean:
+clean: ## Clean
 	$(RM) $(MOCK_HEADERS) $(TARGETS)
 
 mock_%.cpp: %.h
@@ -24,3 +29,6 @@ mock_%.cpp: %.h
 
 test_%: test_%.cpp $(MOCK_HEADERS)
 	$(GPP) $(CPPFLAGS) -o $@ $<
+
+help: ## Show this help.
+	@sed -ne "/@sed/!s/## //p" $(MAKEFILE_LIST)
