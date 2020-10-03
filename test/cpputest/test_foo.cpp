@@ -30,9 +30,26 @@ TEST(TestMain, TestFooSuccess)
 
 TEST(TestMain, TestPiyoSuccess)
 {
-    expect_piyo(0, 1, 2);
-    int result = piyo(0, 1);
-    CHECK_EQUAL(2, result);
+    class Test{
+    public:
+        int lhd;
+        int rhd;
+        int retval;
+
+    public:
+        Test(int lhd, int rhd, int retval) : lhd(lhd), rhd(rhd), retval(retval) {}
+    };
+    Test tests[] = {
+        Test(0, 1, 2),
+        Test(2, 1, 3),
+    };
+    int length = sizeof(tests)/sizeof(tests[0]);
+    for (int i=0; i<length; i++) {
+        Test *t = &tests[i];
+        expect_piyo(t->lhd, t->rhd, t->retval);
+        int result = piyo(t->lhd, t->rhd);
+        CHECK_EQUAL(t->retval, result);
+    }
 
     mock().checkExpectations();
 }
