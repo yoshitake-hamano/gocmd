@@ -44,6 +44,13 @@ top
         $$ = []FunctionDeclaration{fd}
         yylex.(*Lexer).result = $$
     }
+    | value
+    {
+        debugPrintf("Syntax: top = value\n")
+        debugPrintf("Syntax: skip value...\n")
+        $$ = []FunctionDeclaration{}
+        yylex.(*Lexer).result = $$
+    }
     | top ';' top
     {
         debugPrintf("Syntax: top = top(%v) ; top(%v)\n", $1, $3)
@@ -57,6 +64,12 @@ top
         debugPrintf("Syntax: top = top(%v) ; EOF\n", $1)
         $$ = $1.([]FunctionDeclaration)
         yylex.(*Lexer).result = $$
+    }
+
+value
+    : expr
+    {
+        debugPrintf("Syntax: value = expr(%v)\n", $1)
     }
 
 fnctn
