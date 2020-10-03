@@ -25,6 +25,8 @@ const(
 	typeUnsignedInt
 	typeLongInt
 	typeUnsignedLongInt
+	typeLongLongInt
+	typeUnsignedLongLongInt
 	typeDouble
 	typeUnknown
 )
@@ -40,6 +42,33 @@ func isVoid(types []string) bool {
 		}
 	}
 	return result
+}
+
+func getLongType(types []string) CpputestType {
+	unsigned := false
+	nLong := 0
+	for _, typ := range types {
+		switch typ {
+		case "unsigned":
+			unsigned = true
+		case "long":
+			nLong++
+		}
+	}
+	if nLong == 1 {
+		if unsigned {
+			return typeUnsignedLongInt
+		} else {
+			return typeLongInt
+		}
+	} else if nLong == 2 {
+		if unsigned {
+			return typeUnsignedLongLongInt
+		} else {
+			return typeLongLongInt
+		}
+	}
+	return typeUnknown
 }
 
 func getCpputestType(types []string) CpputestType {
@@ -58,11 +87,7 @@ func getCpputestType(types []string) CpputestType {
 				return typeInt
 			}
 		case "long":
-			if unsigned {
-				return typeUnsignedLongInt
-			} else {
-				return typeLongInt
-			}
+			return getLongType(types)
 		case "double":
 			return typeDouble
 		}
@@ -146,10 +171,12 @@ func (fd FunctionDeclaration) WriteExpectFunction(w io.Writer) {
 	}
 	switch getCpputestType(fd.typ) {
 	case typeVoid:
-	case typeInt:             fallthrough;
-	case typeUnsignedInt:     fallthrough;
-	case typeLongInt:         fallthrough;
-	case typeUnsignedLongInt: fallthrough;
+	case typeInt:                 fallthrough;
+	case typeUnsignedInt:         fallthrough;
+	case typeLongInt:             fallthrough;
+	case typeUnsignedLongInt:     fallthrough;
+	case typeLongLongInt:         fallthrough;
+	case typeUnsignedLongLongInt: fallthrough;
 	case typeDouble:
 		bw.WriteString("\n          ")
 		bw.WriteString(".andReturnValue(retval)")
@@ -200,6 +227,12 @@ func (fd FunctionDeclaration) WriteActualFunction(w io.Writer) {
 	case typeUnsignedLongInt:
 		bw.WriteString("\n          ")
 		bw.WriteString(".returnUnsignedLongIntValue()")
+	case typeLongLongInt:
+		bw.WriteString("\n          ")
+		bw.WriteString(".returnLongLongIntValue()")
+	case typeUnsignedLongLongInt:
+		bw.WriteString("\n          ")
+		bw.WriteString(".returnUnsignedLongLongIntValue()")
 	case typeDouble:
 		bw.WriteString("\n          ")
 		bw.WriteString(".returnDoubleValue()")
