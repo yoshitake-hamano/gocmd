@@ -42,6 +42,7 @@ TEST(TestMain, TestPiyoSuccess)
     Test tests[] = {
         Test(0, 1, 2),
         Test(2, 1, 3),
+        Test(2, 2, 3),
     };
     int length = sizeof(tests)/sizeof(tests[0]);
     for (int i=0; i<length; i++) {
@@ -49,9 +50,10 @@ TEST(TestMain, TestPiyoSuccess)
         expect_piyo(t->lhd, t->rhd, t->retval);
         int result = piyo(t->lhd, t->rhd);
         CHECK_EQUAL(t->retval, result);
-    }
 
-    mock().checkExpectations();
+        mock().checkExpectations();
+        mock().clear();
+    }
 }
 
 int main(int argc, char **argv)
