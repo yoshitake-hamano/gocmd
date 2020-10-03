@@ -77,15 +77,20 @@ function testSuiteHello() {
     assertStringEquals "Hello" "${s}"
 }
 
-function testSuiteCreatemock() {
+function testSuiteCreatemockReturnsOK() {
     assertReturnsOK "${CREATEMOCK}" "void sum(void)"
     assertReturnsOK "${CREATEMOCK}" "void sum(int a)"
     assertReturnsOK "${CREATEMOCK}" "void sum(int)"
     assertReturnsOK "${CREATEMOCK}" "unsigned int sum(int a, int b)"
     assertReturnsOK "${CREATEMOCK}" "unsigned int sum(int a, int *b)"
+}
 
+function testSuiteCreatemockGlobalVariable() {
     assertExec "${CREATEMOCK}" "int value" 0 ''
     assertExec "${CREATEMOCK}" "int value;" 0 ''
+}
+
+function testSuiteCreatemockSimpleFunction() {
     assertExec "${CREATEMOCK}" "void sum(int a)" 0 'void expect_sum(int a)
 {
     mock().expectOneCall("sum")
@@ -108,7 +113,9 @@ void sum(int a)
     mock().actualCall("sum")
           .withParameter("a", a);
 }'
+}
 
+function testSuiteCreatemockReturnType() {
     assertExec "${CREATEMOCK}" "int sum(int a)" 0 'void expect_sum(int a, int retval)
 {
     mock().expectOneCall("sum")
@@ -164,8 +171,9 @@ unsigned long sum(int a)
           .withParameter("a", a)
           .returnUnsignedLongIntValue();
 }'
+}
 
-
+function testSuiteCreatemockArgumentType() {
     assertExec "${CREATEMOCK}" "int sum(unsigned int a)" 0 'void expect_sum(unsigned int a, int retval)
 {
     mock().expectOneCall("sum")
@@ -207,7 +215,14 @@ int sum(double a)
           .withParameter("a", a)
           .returnIntValue();
 }'
+}
 
+function testSuiteCreatemock() {
+    testSuiteCreatemockReturnsOK
+    testSuiteCreatemockGlobalVariable
+    testSuiteCreatemockSimpleFunction
+    testSuiteCreatemockReturnType
+    testSuiteCreatemockArgumentType
 }
 
 testSuiteHello
