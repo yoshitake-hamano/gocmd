@@ -141,7 +141,7 @@ unsigned int sum(int a)
 {
     return mock().actualCall("sum")
           .withParameter("a", a)
-          .returnUnsignedLongIntValue();
+          .returnUnsignedIntValue();
 }'
 
     assertExec "${CREATEMOCK}" "long sum(int a)" 0 'void expect_sum(int a, long retval)
@@ -155,7 +155,7 @@ long sum(int a)
 {
     return mock().actualCall("sum")
           .withParameter("a", a)
-          .returnIntValue();
+          .returnLongIntValue();
 }'
 
     assertExec "${CREATEMOCK}" "unsigned long sum(int a)" 0 'void expect_sum(int a, unsigned long retval)

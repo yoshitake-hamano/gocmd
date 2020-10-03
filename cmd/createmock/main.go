@@ -22,6 +22,8 @@ const(
 	typeVoid CpputestType = iota
 	typeBool
 	typeInt
+	typeUnsignedInt
+	typeLongInt
 	typeUnsignedLongInt
 	typeDouble
 	typeUnknown
@@ -51,7 +53,7 @@ func getCpputestType(types []string) CpputestType {
 			unsigned = true
 		case "int":
 			if unsigned {
-				return typeUnsignedLongInt
+				return typeUnsignedInt
 			} else {
 				return typeInt
 			}
@@ -59,7 +61,7 @@ func getCpputestType(types []string) CpputestType {
 			if unsigned {
 				return typeUnsignedLongInt
 			} else {
-				return typeInt
+				return typeLongInt
 			}
 		case "double":
 			return typeDouble
@@ -145,6 +147,8 @@ func (fd FunctionDeclaration) WriteExpectFunction(w io.Writer) {
 	switch getCpputestType(fd.typ) {
 	case typeVoid:
 	case typeInt:             fallthrough;
+	case typeUnsignedInt:     fallthrough;
+	case typeLongInt:         fallthrough;
 	case typeUnsignedLongInt: fallthrough;
 	case typeDouble:
 		bw.WriteString("\n          ")
@@ -187,6 +191,12 @@ func (fd FunctionDeclaration) WriteActualFunction(w io.Writer) {
 	case typeInt:
 		bw.WriteString("\n          ")
 		bw.WriteString(".returnIntValue()")
+	case typeUnsignedInt:
+		bw.WriteString("\n          ")
+		bw.WriteString(".returnUnsignedIntValue()")
+	case typeLongInt:
+		bw.WriteString("\n          ")
+		bw.WriteString(".returnLongIntValue()")
 	case typeUnsignedLongInt:
 		bw.WriteString("\n          ")
 		bw.WriteString(".returnUnsignedLongIntValue()")
