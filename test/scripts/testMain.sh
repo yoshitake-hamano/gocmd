@@ -164,6 +164,50 @@ unsigned long sum(int a)
           .withParameter("a", a)
           .returnUnsignedLongIntValue();
 }'
+
+
+    assertExec "${CREATEMOCK}" "int sum(unsigned int a)" 0 'void expect_sum(unsigned int a, int retval)
+{
+    mock().expectOneCall("sum")
+          .withParameter("a", a)
+          .andReturnValue(retval);
+}
+
+int sum(unsigned int a)
+{
+    return mock().actualCall("sum")
+          .withParameter("a", a)
+          .returnIntValue();
+}'
+
+    assertExec "${CREATEMOCK}" "int sum(long a)" 0 'void expect_sum(long a, int retval)
+{
+    mock().expectOneCall("sum")
+          .withParameter("a", a)
+          .andReturnValue(retval);
+}
+
+int sum(long a)
+{
+    return mock().actualCall("sum")
+          .withParameter("a", a)
+          .returnIntValue();
+}'
+
+    assertExec "${CREATEMOCK}" "int sum(double a)" 0 'void expect_sum(double a, int retval)
+{
+    mock().expectOneCall("sum")
+          .withParameter("a", a)
+          .andReturnValue(retval);
+}
+
+int sum(double a)
+{
+    return mock().actualCall("sum")
+          .withParameter("a", a)
+          .returnIntValue();
+}'
+
 }
 
 testSuiteHello
