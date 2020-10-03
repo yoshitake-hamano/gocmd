@@ -108,6 +108,20 @@ void sum(int a)
     mock().actualCall("sum")
           .withParameter("a", a);
 }'
+
+    assertExec "${CREATEMOCK}" "int sum(int a)" 0 'void expect_sum(int a, int retval)
+{
+    mock().expectOneCall("sum")
+          .withParameter("a", a)
+          .andReturnIntValue(retval);
+}
+
+int sum(int a)
+{
+    return mock().actualCall("sum")
+          .withParameter("a", a)
+          .returnIntValue();
+}'
 }
 
 testSuiteHello

@@ -17,6 +17,40 @@ type Lexer struct {
 
 var vervose = flag.Bool("vervose", false, "print vervose message")
 
+type CpputestType int
+const(
+	typeVoid CpputestType = iota
+	typeBool
+	typeInt
+	typeUnsignedLongInt
+	typeUnknown
+)
+
+func isVoid(types []string) bool {
+	result := false
+	for _, typ := range types {
+		if typ == "*" {
+			return false
+		}
+		if typ == "void" {
+			result = true
+		}
+	}
+	return result
+}
+
+func getCpputestType(types []string) CpputestType {
+	if isVoid(types) {
+		return typeVoid
+	}
+	for _, typ := range types {
+		if typ == "int" {
+			return typeInt
+		}
+	}
+	return typeUnknown
+}
+
 func debugPrintf(format string, a ...interface{}) (n int, err error) {
 	if *vervose != true {
 		return 0, nil
@@ -49,19 +83,6 @@ func (l *Lexer) Error(e string) {
 	panic(e)
 }
 
-func IsVoid(types []string) bool {
-	result := false
-	for _, typ := range types {
-		if typ == "*" {
-			return false
-		}
-		if typ == "void" {
-			result = true
-		}
-	}
-	return result
-}
-
 func (a Arg) String() string {
 	var sb strings.Builder
 	for _, typ := range a.typ {
@@ -91,7 +112,7 @@ func (fd FunctionDeclaration) WriteExpectFunction(w io.Writer) {
 		}
 		bw.WriteString(arg.String())
 	}
-	if ! IsVoid(fd.typ) {
+	if ! isVoid(fd.typ) {
 		bw.WriteString(", ")
 		bw.WriteString(strings.Join(fd.typ, " "))
 		bw.WriteString(" retval")
@@ -104,9 +125,11 @@ func (fd FunctionDeclaration) WriteExpectFunction(w io.Writer) {
 		bw.WriteString("\n          ")
 		arg.WriteExpectMock(bw)
 	}
-	if ! IsVoid(fd.typ) {
+	switch getCpputestType(fd.typ) {
+	case typeVoid:
+	case typeInt:
 		bw.WriteString("\n          ")
-		bw.WriteString(".andReturnValue(retval)")
+		bw.WriteString(".andReturnIntValue(retval)")
 	}
 	bw.WriteString(";\n")
 
@@ -130,7 +153,7 @@ func (fd FunctionDeclaration) WriteActualFunction(w io.Writer) {
 	bw.WriteString(")\n")
 	bw.WriteString("{\n")
 
-	if ! IsVoid(fd.typ) {
+	if ! isVoid(fd.typ) {
 		fmt.Fprintf(bw, "    return mock().actualCall(\"%s\")", fd.name)
 	} else {
 		fmt.Fprintf(bw, "    mock().actualCall(\"%s\")", fd.name)
@@ -140,7 +163,7 @@ func (fd FunctionDeclaration) WriteActualFunction(w io.Writer) {
 		arg.WriteActualMock(bw)
 
 	}
-	if ! IsVoid(fd.typ) {
+	if ! isVoid(fd.typ) {
 		bw.WriteString("\n          ")
 		bw.WriteString(".returnIntValue()")
 	}
