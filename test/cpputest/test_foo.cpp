@@ -42,13 +42,41 @@ TEST(TestMain, TestPiyoSuccess)
     Test tests[] = {
         Test(0, 1, 2),
         Test(2, 1, 3),
-        Test(2, 2, 3),
+        Test(-2, -1, -3),
     };
     int length = sizeof(tests)/sizeof(tests[0]);
     for (int i=0; i<length; i++) {
         Test *t = &tests[i];
         expect_piyo(t->lhd, t->rhd, t->retval);
         int result = piyo(t->lhd, t->rhd);
+        CHECK_EQUAL(t->retval, result);
+
+        mock().checkExpectations();
+        mock().clear();
+    }
+}
+
+TEST(TestMain, TestFooUIIISuccess)
+{
+    class Test{
+    public:
+        int lhd;
+        int rhd;
+        unsigned int retval;
+
+    public:
+        Test(int lhd, int rhd, unsigned int retval) : lhd(lhd), rhd(rhd), retval(retval) {}
+    };
+    Test tests[] = {
+        Test(0, 1, 2),
+        Test(2, 1, 3),
+        Test(-2, -1, 0),
+    };
+    int length = sizeof(tests)/sizeof(tests[0]);
+    for (int i=0; i<length; i++) {
+        Test *t = &tests[i];
+        expect_foo_ui_i_i(t->lhd, t->rhd, t->retval);
+        int result = foo_ui_i_i(t->lhd, t->rhd);
         CHECK_EQUAL(t->retval, result);
 
         mock().checkExpectations();

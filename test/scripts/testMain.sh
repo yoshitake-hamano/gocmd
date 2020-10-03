@@ -113,7 +113,7 @@ void sum(int a)
 {
     mock().expectOneCall("sum")
           .withParameter("a", a)
-          .andReturnIntValue(retval);
+          .andReturnValue(retval);
 }
 
 int sum(int a)
@@ -121,6 +121,20 @@ int sum(int a)
     return mock().actualCall("sum")
           .withParameter("a", a)
           .returnIntValue();
+}'
+
+    assertExec "${CREATEMOCK}" "unsigned int sum(int a)" 0 'void expect_sum(int a, unsigned int retval)
+{
+    mock().expectOneCall("sum")
+          .withParameter("a", a)
+          .andReturnValue(retval);
+}
+
+unsigned int sum(int a)
+{
+    return mock().actualCall("sum")
+          .withParameter("a", a)
+          .returnUnsignedLongIntValue();
 }'
 }
 

@@ -43,9 +43,17 @@ func getCpputestType(types []string) CpputestType {
 	if isVoid(types) {
 		return typeVoid
 	}
+	unsigned := false
 	for _, typ := range types {
-		if typ == "int" {
-			return typeInt
+		switch typ {
+		case "unsigned":
+			unsigned = true
+		case "int":
+			if unsigned {
+				return typeUnsignedLongInt
+			} else {
+				return typeInt
+			}
 		}
 	}
 	return typeUnknown
@@ -129,7 +137,10 @@ func (fd FunctionDeclaration) WriteExpectFunction(w io.Writer) {
 	case typeVoid:
 	case typeInt:
 		bw.WriteString("\n          ")
-		bw.WriteString(".andReturnIntValue(retval)")
+		bw.WriteString(".andReturnValue(retval)")
+	case typeUnsignedLongInt:
+		bw.WriteString("\n          ")
+		bw.WriteString(".andReturnValue(retval)")
 	}
 	bw.WriteString(";\n")
 
@@ -163,9 +174,16 @@ func (fd FunctionDeclaration) WriteActualFunction(w io.Writer) {
 		arg.WriteActualMock(bw)
 
 	}
-	if ! isVoid(fd.typ) {
+	switch getCpputestType(fd.typ) {
+	case typeVoid:
+	case typeInt:
 		bw.WriteString("\n          ")
 		bw.WriteString(".returnIntValue()")
+	case typeUnsignedLongInt:
+		bw.WriteString("\n          ")
+		bw.WriteString(".returnUnsignedLongIntValue()")
+	}
+	if ! isVoid(fd.typ) {
 	}
 	bw.WriteString(";\n")
 
