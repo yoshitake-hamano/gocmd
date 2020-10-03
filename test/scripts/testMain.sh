@@ -84,7 +84,20 @@ function testSuiteCreatemock() {
     assertReturnsOK "${CREATEMOCK}" "unsigned int sum(int a, int b)"
     assertReturnsOK "${CREATEMOCK}" "unsigned int sum(int a, int *b)"
 
+    assertExec "${CREATEMOCK}" "int value" 0 ''
+    assertExec "${CREATEMOCK}" "int value;" 0 ''
     assertExec "${CREATEMOCK}" "void sum(int a)" 0 'void expect_sum(int a)
+{
+    mock().expectOneCall("sum")
+          .withParameter("a", a);
+}
+
+void sum(int a)
+{
+    mock().actualCall("sum")
+          .withParameter("a", a);
+}'
+    assertExec "${CREATEMOCK}" "void sum(int a);" 0 'void expect_sum(int a)
 {
     mock().expectOneCall("sum")
           .withParameter("a", a);
