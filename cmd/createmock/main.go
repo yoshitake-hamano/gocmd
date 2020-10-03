@@ -54,6 +54,12 @@ func getCpputestType(types []string) CpputestType {
 			} else {
 				return typeInt
 			}
+		case "long":
+			if unsigned {
+				return typeUnsignedLongInt
+			} else {
+				return typeInt
+			}
 		}
 	}
 	return typeUnknown
