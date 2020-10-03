@@ -23,6 +23,7 @@ const(
 	typeBool
 	typeInt
 	typeUnsignedLongInt
+	typeDouble
 	typeUnknown
 )
 
@@ -60,6 +61,8 @@ func getCpputestType(types []string) CpputestType {
 			} else {
 				return typeInt
 			}
+		case "double":
+			return typeDouble
 		}
 	}
 	return typeUnknown
@@ -141,10 +144,9 @@ func (fd FunctionDeclaration) WriteExpectFunction(w io.Writer) {
 	}
 	switch getCpputestType(fd.typ) {
 	case typeVoid:
-	case typeInt:
-		bw.WriteString("\n          ")
-		bw.WriteString(".andReturnValue(retval)")
-	case typeUnsignedLongInt:
+	case typeInt:             fallthrough;
+	case typeUnsignedLongInt: fallthrough;
+	case typeDouble:
 		bw.WriteString("\n          ")
 		bw.WriteString(".andReturnValue(retval)")
 	}
@@ -188,6 +190,9 @@ func (fd FunctionDeclaration) WriteActualFunction(w io.Writer) {
 	case typeUnsignedLongInt:
 		bw.WriteString("\n          ")
 		bw.WriteString(".returnUnsignedLongIntValue()")
+	case typeDouble:
+		bw.WriteString("\n          ")
+		bw.WriteString(".returnDoubleValue()")
 	}
 	if ! isVoid(fd.typ) {
 	}

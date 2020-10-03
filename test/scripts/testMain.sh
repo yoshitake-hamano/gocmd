@@ -171,6 +171,20 @@ unsigned long sum(int a)
           .withParameter("a", a)
           .returnUnsignedLongIntValue();
 }'
+
+    assertExec "${CREATEMOCK}" "double sum(int a)" 0 'void expect_sum(int a, double retval)
+{
+    mock().expectOneCall("sum")
+          .withParameter("a", a)
+          .andReturnValue(retval);
+}
+
+double sum(int a)
+{
+    return mock().actualCall("sum")
+          .withParameter("a", a)
+          .returnDoubleValue();
+}'
 }
 
 function testSuiteCreatemockArgumentType() {
