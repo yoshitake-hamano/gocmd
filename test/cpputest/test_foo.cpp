@@ -84,6 +84,58 @@ TEST(TestMain, TestFooUIIISuccess)
     }
 }
 
+TEST(TestMain, TestFooSSuccess)
+{
+    class Test{
+    public:
+        char *s_expect;
+        char *s_actual;
+
+    public:
+        Test(char *s_expect, char *s_actual) : s_expect(s_expect), s_actual(s_actual) {}
+    };
+    Test tests[] = {
+        Test((char *)"abc", (char *)"abc"),
+        Test((char *)"def", (char *)"def"),
+        Test((char *)"ghi", (char *)"ghi"),
+    };
+    int length = sizeof(tests)/sizeof(tests[0]);
+    for (int i=0; i<length; i++) {
+        Test *t = &tests[i];
+        expect_foo_s(t->s_expect);
+        foo_s(t->s_actual);
+
+        mock().checkExpectations();
+        mock().clear();
+    }
+}
+
+TEST(TestMain, TestFooCSSuccess)
+{
+    class Test{
+    public:
+        const char *s_expect;
+        const char *s_actual;
+
+    public:
+        Test(const char *s_expect, const char *s_actual) : s_expect(s_expect), s_actual(s_actual) {}
+    };
+    Test tests[] = {
+        Test("abc", "abc"),
+        Test("def", "def"),
+        Test("ghi", "ghi"),
+    };
+    int length = sizeof(tests)/sizeof(tests[0]);
+    for (int i=0; i<length; i++) {
+        Test *t = &tests[i];
+        expect_foo_cs(t->s_expect);
+        foo_cs(t->s_actual);
+
+        mock().checkExpectations();
+        mock().clear();
+    }
+}
+
 int main(int argc, char **argv)
 {
     return CommandLineTestRunner::RunAllTests(argc, argv);
