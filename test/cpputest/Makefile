@@ -14,7 +14,7 @@ GPP          := g++
 .PHONY: test
 test: $(TARGETS) ## Test
 	for cmd in $^; do \
-		./$$cmd; \
+		./$$cmd -v; \
 	done
 
 .PHONY: mock
