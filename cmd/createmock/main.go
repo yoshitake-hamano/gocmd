@@ -260,11 +260,17 @@ func main() {
 		var err error
 		r, err = os.Open(*file)
 		if err != nil {
-			panic(err)
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			os.Exit(1)
 		}
 	}
 	if *arg != "" {
 		r = strings.NewReader(*arg)
+	}
+	if r == nil {
+		fmt.Fprintf(os.Stderr, "error: must specify file or arg\n")
+		flag.Usage()
+		os.Exit(1)
 	}
 	l.Init(r)
 	yyErrorVerbose = true
