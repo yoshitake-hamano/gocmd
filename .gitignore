@@ -27,3 +27,9 @@ bin/
 # for cmd/yacc
 parser.go
 *.output
+
+test/cpputest/*
+!test/cpputest/*/*
+!test/cpputest/*.*
+test/cpputest/*.dSYM
+test/cpputest/mock_*
