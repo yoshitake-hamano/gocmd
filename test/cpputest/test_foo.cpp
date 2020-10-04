@@ -168,5 +168,7 @@ TEST(TestMain, TestFooPSuccess)
 
 int main(int argc, char **argv)
 {
+    mock().crashOnFailure(true);
+    mock().strictOrder();
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }
