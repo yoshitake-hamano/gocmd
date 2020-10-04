@@ -278,6 +278,8 @@ int sum(char * s)
           // .withParameter("p", p)
           // case2: if compare value of address
           .withMemoryBufferParameter("p", (const unsigned char *)p, p_size)
+          // case3: if output value
+          // .withOutputParameterReturning("p", (const void *)p, p_size)
           .withParameter("p_size", p_size)
           .andReturnValue(retval);
 }
@@ -289,6 +291,8 @@ int sum(void * p, int p_size)
           // .withParameter("p", p)
           // case2: if compare value of address
           .withMemoryBufferParameter("p", (const unsigned char *)p, p_size)
+          // case3: if output value
+          // .withOutputParameter("p", (void *)p)
           .withParameter("p_size", p_size)
           .returnIntValue();
 }'

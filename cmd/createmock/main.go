@@ -170,8 +170,10 @@ func (a Arg) WriteExpectMock(w *bufio.Writer) {
           // case1: if compare address
           // .withParameter("%s", %s)
           // case2: if compare value of address
-          .withMemoryBufferParameter("%s", (const unsigned char *)%s, %s_size)`,
-			a.name, a.name, a.name, a.name, a.name)
+          .withMemoryBufferParameter("%s", (const unsigned char *)%s, %s_size)
+          // case3: if output value
+          // .withOutputParameterReturning("%s", (const void *)%s, %s_size)`,
+			a.name, a.name, a.name, a.name, a.name, a.name, a.name, a.name)
 	default:
 		w.WriteString("\n          ")
 		fmt.Fprintf(w, ".withParameter(\"%s\", %s)", a.name, a.name)
@@ -185,8 +187,10 @@ func (a Arg) WriteActualMock(w *bufio.Writer) {
           // case1: if compare address
           // .withParameter("%s", %s)
           // case2: if compare value of address
-          .withMemoryBufferParameter("%s", (const unsigned char *)%s, %s_size)`,
-			a.name, a.name, a.name, a.name, a.name)
+          .withMemoryBufferParameter("%s", (const unsigned char *)%s, %s_size)
+          // case3: if output value
+          // .withOutputParameter("%s", (void *)%s)`,
+			a.name, a.name, a.name, a.name, a.name, a.name, a.name)
 	default:
 		w.WriteString("\n          ")
 		fmt.Fprintf(w, ".withParameter(\"%s\", %s)", a.name, a.name)
