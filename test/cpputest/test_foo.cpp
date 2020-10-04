@@ -147,15 +147,19 @@ TEST(TestMain, TestFooPSuccess)
         Test(void *p, int size) : p(p), size(size) {}
     };
     Test tests[] = {
-        Test((void *)"abc", 3),
-        Test((void *)"def", 3),
-        Test((void *)"ghi", 3),
+        Test((void *)"abc",  4),
+        Test((void *)"defg", 5),
+        Test((void *)"hi",   3),
     };
     int length = sizeof(tests)/sizeof(tests[0]);
     for (int i=0; i<length; i++) {
         Test *t = &tests[i];
+
+        char buf[16];
+        memmove(buf, t->p, t->size);
+
         expect_foo_p((void *)t->p, t->size);
-        foo_p((void *)t->p, t->size);
+        foo_p((void *)buf, t->size);
 
         mock().checkExpectations();
         mock().clear();
