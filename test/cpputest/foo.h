@@ -4,6 +4,7 @@
  * fgi
  */
 
+#define PI 3.1415926
 int global_a;
 
 int foo(int a, int b);

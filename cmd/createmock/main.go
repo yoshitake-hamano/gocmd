@@ -141,6 +141,9 @@ func (l *Lexer) Lex(lval *yySymType) int {
 	case '*':
 		token = IDENT
 		debugPrintf("Lex() returns *, ")
+	case '#':
+		token = IDENT
+		debugPrintf("Lex() returns #, ")
 	default:
 		debugPrintf("Lex() returns other(perhaps ascii or EOF), ")
 	}
