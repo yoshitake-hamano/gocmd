@@ -13,5 +13,5 @@ how to use
 
 1. Copy the function declare
 2. Move current position
-3. M-x create-mock
+3. M-x insert-mock
 4. Yank the function declare
