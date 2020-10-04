@@ -28,20 +28,40 @@ const(
 	typeLongLongInt
 	typeUnsignedLongLongInt
 	typeDouble
+	typeString
+	typePointer
 	typeUnknown
 )
 
-func isVoid(types []string) bool {
-	result := false
-	for _, typ := range types {
-		if typ == "*" {
-			return false
-		}
-		if typ == "void" {
-			result = true
+func hasType(types []string, typ string) bool {
+	for _, t := range types {
+		if t == typ {
+			return true
 		}
 	}
-	return result
+	return false
+}
+
+func hasPointer(types []string) bool {
+	return hasType(types, "*")
+}
+
+func hasVoid(types []string) bool {
+	return hasType(types, "void")
+}
+
+func isVoid(types []string) bool {
+	if hasPointer(types) {
+		return false
+	}
+	return hasVoid(types)
+}
+
+func isString(types []string) bool {
+	if !hasPointer(types) {
+		return false
+	}
+	return hasType(types, "char")
 }
 
 func getLongType(types []string) CpputestType {
@@ -74,6 +94,12 @@ func getLongType(types []string) CpputestType {
 func getCpputestType(types []string) CpputestType {
 	if isVoid(types) {
 		return typeVoid
+	}
+	if isString(types) {
+		return typeString
+	}
+	if hasPointer(types) {
+		return typePointer
 	}
 	unsigned := false
 	for _, typ := range types {
@@ -137,12 +163,34 @@ func (a Arg) String() string {
 	return sb.String()
 }
 
-func (a Arg) WriteExpectMock(w io.Writer) {
-	fmt.Fprintf(w, ".withParameter(\"%s\", %s)", a.name, a.name)
+func (a Arg) WriteExpectMock(w *bufio.Writer) {
+	switch getCpputestType(a.typ) {
+	case typePointer:
+		fmt.Fprintf(w, `
+          // case1: if compare address
+          // .withParameter("%s", %s)
+          // case2: if compare value of address
+          .withMemoryBufferParameter("%s", (const unsigned char *)%s, %s_size)`,
+			a.name, a.name, a.name, a.name, a.name)
+	default:
+		w.WriteString("\n          ")
+		fmt.Fprintf(w, ".withParameter(\"%s\", %s)", a.name, a.name)
+	}
 }
 
-func (a Arg) WriteActualMock(w io.Writer) {
-	fmt.Fprintf(w, ".withParameter(\"%s\", %s)", a.name, a.name)
+func (a Arg) WriteActualMock(w *bufio.Writer) {
+	switch getCpputestType(a.typ) {
+	case typePointer:
+		fmt.Fprintf(w, `
+          // case1: if compare address
+          // .withParameter("%s", %s)
+          // case2: if compare value of address
+          .withMemoryBufferParameter("%s", (const unsigned char *)%s, %s_size)`,
+			a.name, a.name, a.name, a.name, a.name)
+	default:
+		w.WriteString("\n          ")
+		fmt.Fprintf(w, ".withParameter(\"%s\", %s)", a.name, a.name)
+	}
 }
 
 func (fd FunctionDeclaration) WriteExpectFunction(w io.Writer) {
@@ -166,18 +214,11 @@ func (fd FunctionDeclaration) WriteExpectFunction(w io.Writer) {
 
 	fmt.Fprintf(bw, "    mock().expectOneCall(\"%s\")", fd.name)
 	for _, arg := range fd.args {
-		bw.WriteString("\n          ")
 		arg.WriteExpectMock(bw)
 	}
 	switch getCpputestType(fd.typ) {
 	case typeVoid:
-	case typeInt:                 fallthrough;
-	case typeUnsignedInt:         fallthrough;
-	case typeLongInt:             fallthrough;
-	case typeUnsignedLongInt:     fallthrough;
-	case typeLongLongInt:         fallthrough;
-	case typeUnsignedLongLongInt: fallthrough;
-	case typeDouble:
+	default:
 		bw.WriteString("\n          ")
 		bw.WriteString(".andReturnValue(retval)")
 	}
@@ -209,9 +250,7 @@ func (fd FunctionDeclaration) WriteActualFunction(w io.Writer) {
 		fmt.Fprintf(bw, "    mock().actualCall(\"%s\")", fd.name)
 	}
 	for _, arg := range fd.args {
-		bw.WriteString("\n          ")
 		arg.WriteActualMock(bw)
-
 	}
 	switch getCpputestType(fd.typ) {
 	case typeVoid:
@@ -236,8 +275,9 @@ func (fd FunctionDeclaration) WriteActualFunction(w io.Writer) {
 	case typeDouble:
 		bw.WriteString("\n          ")
 		bw.WriteString(".returnDoubleValue()")
-	}
-	if ! isVoid(fd.typ) {
+	case typePointer:
+		bw.WriteString("\n          ")
+		bw.WriteString(".returnPointerValue()")
 	}
 	bw.WriteString(";\n")
 

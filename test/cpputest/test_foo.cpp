@@ -140,7 +140,7 @@ TEST(TestMain, TestFooPSuccess)
 {
     class Test{
     public:
-        const void *p;
+        void *p;
         int size;
 
     public:

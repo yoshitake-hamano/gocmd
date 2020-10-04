@@ -257,6 +257,41 @@ int sum(double a)
           .withParameter("a", a)
           .returnIntValue();
 }'
+    assertExec "${CREATEMOCK}" "int sum(char *s)" 0 'void expect_sum(char * s, int retval)
+{
+    mock().expectOneCall("sum")
+          .withParameter("s", s)
+          .andReturnValue(retval);
+}
+
+int sum(char * s)
+{
+    return mock().actualCall("sum")
+          .withParameter("s", s)
+          .returnIntValue();
+}'
+
+    assertExec "${CREATEMOCK}" "int sum(void *p, int p_size)" 0 'void expect_sum(void * p, int p_size, int retval)
+{
+    mock().expectOneCall("sum")
+          // case1: if compare address
+          // .withParameter("p", p)
+          // case2: if compare value of address
+          .withMemoryBufferParameter("p", (const unsigned char *)p, p_size)
+          .withParameter("p_size", p_size)
+          .andReturnValue(retval);
+}
+
+int sum(void * p, int p_size)
+{
+    return mock().actualCall("sum")
+          // case1: if compare address
+          // .withParameter("p", p)
+          // case2: if compare value of address
+          .withMemoryBufferParameter("p", (const unsigned char *)p, p_size)
+          .withParameter("p_size", p_size)
+          .returnIntValue();
+}'
 }
 
 function testSuiteCreatemock() {
