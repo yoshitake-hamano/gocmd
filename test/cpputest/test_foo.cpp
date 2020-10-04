@@ -136,6 +136,32 @@ TEST(TestMain, TestFooCSSuccess)
     }
 }
 
+TEST(TestMain, TestFooPSuccess)
+{
+    class Test{
+    public:
+        const void *p;
+        int size;
+
+    public:
+        Test(void *p, int size) : p(p), size(size) {}
+    };
+    Test tests[] = {
+        Test((void *)"abc", 3),
+        Test((void *)"def", 3),
+        Test((void *)"ghi", 3),
+    };
+    int length = sizeof(tests)/sizeof(tests[0]);
+    for (int i=0; i<length; i++) {
+        Test *t = &tests[i];
+        expect_foo_p((void *)t->p, t->size);
+        foo_p((void *)t->p, t->size);
+
+        mock().checkExpectations();
+        mock().clear();
+    }
+}
+
 int main(int argc, char **argv)
 {
     return CommandLineTestRunner::RunAllTests(argc, argv);
