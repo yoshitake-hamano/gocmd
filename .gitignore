@@ -28,6 +28,7 @@ bin/
 parser.go
 *.output
 
+# for test/cpputest
 test/cpputest/*
 !test/cpputest/*/*
 !test/cpputest/*.*
