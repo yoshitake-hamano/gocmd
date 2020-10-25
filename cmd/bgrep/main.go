@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"regexp"
 )
 
@@ -74,22 +75,30 @@ func readRegexps(filename string) ([]string, error) {
 
 func main() {
 	var (
-		inputfile  = flag.String("i", "", "input file")
+		inputpath  = flag.String("i", "", "input path")
 		blacklistfile = flag.String("b", "", "regexp file(blacklist)")
 		whitelistfile = flag.String("w", "", "regexp file(whitelist)")
 	)
 	flag.Parse()
-
-	filedata, err := ioutil.ReadFile(*inputfile)
-	check(err)
 
 	blacklist, err := readRegexps(*blacklistfile)
 	check(err)
 	whitelist, err := readRegexps(*whitelistfile)
 	check(err)
 
-	b := NewFinder(blacklist, whitelist)
-	b.Find(filedata, func(match []byte) {
-		fmt.Printf("%s: %s\n", *inputfile, string(match))
+	err = filepath.Walk(*inputpath, func(path string, info os.FileInfo, err error) error {
+		if ! info.Mode().IsRegular() {
+			return err
+		}
+
+		filedata, err := ioutil.ReadFile(path)
+		check(err)
+
+		b := NewFinder(blacklist, whitelist)
+		b.Find(filedata, func(match []byte) {
+			fmt.Printf("%s: %s\n", path, string(match))
+		})
+		return err
 	})
+	check(err)
 }
