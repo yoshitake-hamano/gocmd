@@ -88,7 +88,7 @@ func mainImpl(blacklist, whitelist []string, inputpath string) error {
 		b.Find(filedata, func(match []byte) {
 			fmt.Printf("%s: %s\n", path, string(match))
 		})
-		return err
+		return nil
 	})
 	return err
 }
