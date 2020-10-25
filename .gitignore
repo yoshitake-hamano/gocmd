@@ -4,6 +4,7 @@
 *.dll
 *.so
 *.dylib
+*.dSYM
 
 # Test binary, built with `go test -c`
 *.test
@@ -34,3 +35,6 @@ test/cpputest/*
 !test/cpputest/*.*
 test/cpputest/*.dSYM
 test/cpputest/mock_*
+
+test/bgrep/example
+test/blackout/example
