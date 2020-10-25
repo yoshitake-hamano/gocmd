@@ -52,6 +52,8 @@ func NewFinder(blacklist, whitelist []string) *Finder {
 
 func (b *Finder) Find(path string, fn func(path, keyword, text string)) {
 	r, err := os.Open(path)
+	defer r.Close()
+
 	if err != nil {
 		fmt.Print(err)
 		return
