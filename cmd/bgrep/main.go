@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sync"
 )
 
 type Finder struct {
@@ -73,7 +74,38 @@ func readRegexps(filename string) ([]string, error) {
 	return regexps, nil
 }
 
-func mainImpl(blacklist, whitelist []string, inputpath string) error {
+func mainImplUsingGoroutine(blacklist, whitelist []string, inputpath string) error {
+	b := NewFinder(blacklist, whitelist)
+	ch := make(chan string)
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for p := range ch {
+			filedata, err := ioutil.ReadFile(p)
+			if err != nil {
+				fmt.Print(err)
+				return
+			}
+
+			b.Find(filedata, func(match []byte) {
+				fmt.Printf("%s: %s\n", p, string(match))
+			})
+		}
+	}()
+	err := filepath.Walk(inputpath, func(path string, info os.FileInfo, err error) error {
+		if ! info.Mode().IsRegular() {
+			return err
+		}
+		ch <- path
+		return nil
+	})
+	close(ch)
+	wg.Wait()
+	return err
+}
+
+func mainImplStanderd(blacklist, whitelist []string, inputpath string) error {
 	b := NewFinder(blacklist, whitelist)
 	err := filepath.Walk(inputpath, func(path string, info os.FileInfo, err error) error {
 		if ! info.Mode().IsRegular() {
@@ -106,6 +138,6 @@ func main() {
 	whitelist, err := readRegexps(*whitelistfile)
 	check(err)
 
-	err = mainImpl(blacklist, whitelist, *inputpath)
+	err = mainImplStanderd(blacklist, whitelist, *inputpath)
 	check(err)
 }
