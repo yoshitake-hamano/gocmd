@@ -23,6 +23,15 @@ func compileRegexps(regexps []string) []*regexp.Regexp {
 	return compiled
 }
 
+func (b *Finder) matchWhitelist(src []byte) bool {
+	for _, wr := range b.whitelist {
+		if wr.Match(src) {
+			return true
+		}
+	}
+	return false
+}
+
 func NewFinder(blacklist, whitelist []string) *Finder {
 	return &Finder{
 		blacklist: compileRegexps(blacklist),
@@ -32,12 +41,9 @@ func NewFinder(blacklist, whitelist []string) *Finder {
 
 func (b *Finder) Find(src []byte, fn func([]byte)) []byte {
 	for _, br := range b.blacklist {
-	eachmatch:
 		for _, match := range br.FindAll(src, len(src)) {
-			for _, wr := range b.whitelist {
-				if wr.Match(match) {
-					continue eachmatch
-				}
+			if b.matchWhitelist(match) {
+				continue
 			}
 			fn(match)
 		}
