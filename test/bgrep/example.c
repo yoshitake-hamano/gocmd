@@ -8,7 +8,7 @@ static void example()
 {
     char *local = "local variable";
     printf("Hello World\n");
-    printf("Helo World\n");
+    printf("HELLO WORLD\n");
     printf("local  : %s\n", local);
     printf("global : %s\n", globalChar);
     printf("global const int : %d\n", globalConstInt);

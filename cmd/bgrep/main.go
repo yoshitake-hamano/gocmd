@@ -10,23 +10,35 @@ import (
 )
 
 type Finder struct {
-	regexps []*regexp.Regexp
+	blacklist []*regexp.Regexp
+	whitelist []*regexp.Regexp
 }
 
-func NewFinder(searchWords []string) *Finder {
-	regexps := make([]*regexp.Regexp, 0, len(searchWords))
-	for _, word := range searchWords {
-		r := regexp.MustCompile(word)
-		regexps = append(regexps, r)
+func compileRegexps(regexps []string) []*regexp.Regexp {
+	compiled := make([]*regexp.Regexp, 0, len(regexps))
+	for _, reg := range regexps {
+		r := regexp.MustCompile(reg)
+		compiled = append(compiled, r)
 	}
+	return compiled
+}
+
+func NewFinder(blacklist, whitelist []string) *Finder {
 	return &Finder{
-		regexps: regexps,
+		blacklist: compileRegexps(blacklist),
+		whitelist: compileRegexps(whitelist),
 	}
 }
 
 func (b *Finder) Find(src []byte, fn func([]byte)) []byte {
-	for _, r := range b.regexps {
-		for _, match := range r.FindAll(src, len(src)) {
+	for _, br := range b.blacklist {
+	eachmatch:
+		for _, match := range br.FindAll(src, len(src)) {
+			for _, wr := range b.whitelist {
+				if wr.Match(match) {
+					continue eachmatch
+				}
+			}
 			fn(match)
 		}
 	}
@@ -44,7 +56,7 @@ func readRegexps(filename string) ([]string, error) {
 	fp, err := os.Open(filename)
 	defer fp.Close()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("read regexps: %w", err)
 	}
 
 	scanner := bufio.NewScanner(fp)
@@ -57,16 +69,20 @@ func readRegexps(filename string) ([]string, error) {
 func main() {
 	var (
 		inputfile  = flag.String("i", "", "input file")
-		regexpfile = flag.String("b", "", "regexp file(blacklist)")
+		blacklistfile = flag.String("b", "", "regexp file(blacklist)")
+		whitelistfile = flag.String("w", "", "regexp file(whitelist)")
 	)
 	flag.Parse()
 
 	filedata, err := ioutil.ReadFile(*inputfile)
 	check(err)
 
-	regexps, err := readRegexps(*regexpfile)
+	blacklist, err := readRegexps(*blacklistfile)
 	check(err)
-	b := NewFinder(regexps)
+	whitelist, err := readRegexps(*whitelistfile)
+	check(err)
+
+	b := NewFinder(blacklist, whitelist)
 	b.Find(filedata, func(match []byte) {
 		fmt.Printf("%s: %s\n", *inputfile, string(match))
 	})
