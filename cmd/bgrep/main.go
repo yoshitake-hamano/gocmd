@@ -73,6 +73,26 @@ func readRegexps(filename string) ([]string, error) {
 	return regexps, nil
 }
 
+func mainImpl(blacklist, whitelist []string, inputpath string) error {
+	b := NewFinder(blacklist, whitelist)
+	err := filepath.Walk(inputpath, func(path string, info os.FileInfo, err error) error {
+		if ! info.Mode().IsRegular() {
+			return err
+		}
+
+		filedata, err := ioutil.ReadFile(path)
+		if err != nil {
+			return err
+		}
+
+		b.Find(filedata, func(match []byte) {
+			fmt.Printf("%s: %s\n", path, string(match))
+		})
+		return err
+	})
+	return err
+}
+
 func main() {
 	var (
 		inputpath  = flag.String("i", "", "input path")
@@ -86,19 +106,6 @@ func main() {
 	whitelist, err := readRegexps(*whitelistfile)
 	check(err)
 
-	err = filepath.Walk(*inputpath, func(path string, info os.FileInfo, err error) error {
-		if ! info.Mode().IsRegular() {
-			return err
-		}
-
-		filedata, err := ioutil.ReadFile(path)
-		check(err)
-
-		b := NewFinder(blacklist, whitelist)
-		b.Find(filedata, func(match []byte) {
-			fmt.Printf("%s: %s\n", path, string(match))
-		})
-		return err
-	})
+	err = mainImpl(blacklist, whitelist, *inputpath)
 	check(err)
 }
