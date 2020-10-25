@@ -78,8 +78,7 @@ func mainImplUsingGoroutine(blacklist, whitelist []string, inputpath string) err
 	b := NewFinder(blacklist, whitelist)
 	ch := make(chan string)
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
+	fn := func() {
 		defer wg.Done()
 		for p := range ch {
 			filedata, err := ioutil.ReadFile(p)
@@ -89,10 +88,15 @@ func mainImplUsingGoroutine(blacklist, whitelist []string, inputpath string) err
 			}
 
 			b.Find(filedata, func(match []byte) {
-				fmt.Printf("%s: %s\n", p, string(match))
+				if ! *silent {
+					fmt.Printf("%s: %s\n", p, string(match))
+				}
 			})
 		}
-	}()
+	}
+	wg.Add(2)
+	go fn()
+	go fn()
 	err := filepath.Walk(inputpath, func(path string, info os.FileInfo, err error) error {
 		if ! info.Mode().IsRegular() {
 			return err
@@ -118,12 +122,16 @@ func mainImplStanderd(blacklist, whitelist []string, inputpath string) error {
 		}
 
 		b.Find(filedata, func(match []byte) {
-			fmt.Printf("%s: %s\n", path, string(match))
+			if ! *silent {
+				fmt.Printf("%s: %s\n", path, string(match))
+			}
 		})
 		return nil
 	})
 	return err
 }
+
+var silent = flag.Bool("s", false, "silent(for benchmark)")
 
 func main() {
 	var (
