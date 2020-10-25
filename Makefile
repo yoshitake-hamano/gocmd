@@ -21,5 +21,9 @@ test: all ## Test
 	$(MAKE) test -C test/cpputest
 	$(MAKE) test -C test/bgrep
 
+.PHONY: benchmark
+benchmark: all ## Benchmark
+	cd cmd/bgrep; go test ./... -bench=. -trace a.trace
+
 help: ## Show this help.
 	@sed -ne "/@sed/!s/## //p" $(MAKEFILE_LIST)
