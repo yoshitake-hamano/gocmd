@@ -18,7 +18,8 @@ clean: ## Clean
 test: all ## Test
 	go test ./...
 	cd test/scripts; ./testMain.sh
-	cd test/cpputest; $(MAKE) test
+	$(MAKE) test -C test/cpputest
+	$(MAKE) test -C test/bgrep
 
 help: ## Show this help.
 	@sed -ne "/@sed/!s/## //p" $(MAKEFILE_LIST)
