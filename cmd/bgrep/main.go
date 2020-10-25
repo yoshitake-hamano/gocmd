@@ -94,9 +94,11 @@ func mainImplUsingGoroutine(blacklist, whitelist []string, inputpath string) err
 			})
 		}
 	}
-	wg.Add(2)
-	go fn()
-	go fn()
+	const sizeOfGorotine = 10
+	wg.Add(sizeOfGorotine)
+	for i:=0; i<sizeOfGorotine; i++ {
+		go fn()
+	}
 	err := filepath.Walk(inputpath, func(path string, info os.FileInfo, err error) error {
 		if ! info.Mode().IsRegular() {
 			return err
