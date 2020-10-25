@@ -4,10 +4,10 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"sync"
 )
 
@@ -25,13 +25,22 @@ func compileRegexps(regexps []string) []*regexp.Regexp {
 	return compiled
 }
 
-func (b *Finder) matchWhitelist(src []byte) bool {
+func (b *Finder) matchWhitelist(src string) (bool, *regexp.Regexp) {
 	for _, wr := range b.whitelist {
-		if wr.Match(src) {
-			return true
+		if wr.MatchString(src) {
+			return true, wr
 		}
 	}
-	return false
+	return false, nil
+}
+
+func (b *Finder) matchBlacklist(src string) (bool, *regexp.Regexp) {
+	for _, wr := range b.blacklist {
+		if wr.MatchString(src) {
+			return true, wr
+		}
+	}
+	return false, nil
 }
 
 func NewFinder(blacklist, whitelist []string) *Finder {
@@ -41,16 +50,26 @@ func NewFinder(blacklist, whitelist []string) *Finder {
 	}
 }
 
-func (b *Finder) Find(src []byte, fn func([]byte)) []byte {
-	for _, br := range b.blacklist {
-		for _, match := range br.FindAll(src, len(src)) {
-			if b.matchWhitelist(match) {
-				continue
-			}
-			fn(match)
-		}
+func (b *Finder) Find(path string, fn func(path, keyword, text string)) {
+	r, err := os.Open(path)
+	if err != nil {
+		fmt.Print(err)
+		return
 	}
-	return src
+
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		t := scanner.Text()
+		match := true
+		var keyword *regexp.Regexp
+		if match, keyword = b.matchBlacklist(t); !match {
+			continue
+		}
+		if match, _ = b.matchWhitelist(t); match {
+			continue
+		}
+		fn(path, keyword.String(), t)
+	}
 }
 
 func check(err error) {
@@ -74,30 +93,42 @@ func readRegexps(filename string) ([]string, error) {
 	return regexps, nil
 }
 
+func printMatchString(path, keyword, text string) {
+	t := strings.TrimFunc(text, func(r rune) bool {
+ 		switch r {
+ 		case rune('\r'):
+ 		case rune('\n'):
+ 		case rune('\t'):
+ 			return true
+ 		}
+		// unicode.In(r, unicode.N, unicode.L, unicode.M)
+		return false
+	})
+	fmt.Printf("%s,%s,%s\n", path, keyword, t)
+}
+
+func printDummyMatchString(path, keyword, text string) {
+}
+
 func mainImplUsingGoroutine(blacklist, whitelist []string, inputpath string) error {
 	b := NewFinder(blacklist, whitelist)
+	printer := printMatchString
+	if *silent {
+		printer = printDummyMatchString
+	}
+
 	ch := make(chan string)
 	wg := sync.WaitGroup{}
-	fn := func() {
+	worker := func() {
 		defer wg.Done()
 		for p := range ch {
-			filedata, err := ioutil.ReadFile(p)
-			if err != nil {
-				fmt.Print(err)
-				return
-			}
-
-			b.Find(filedata, func(match []byte) {
-				if ! *silent {
-					fmt.Printf("%s: %s\n", p, string(match))
-				}
-			})
+			b.Find(p, printer)
 		}
 	}
 	const sizeOfGorotine = 10
 	wg.Add(sizeOfGorotine)
 	for i:=0; i<sizeOfGorotine; i++ {
-		go fn()
+		go worker()
 	}
 	err := filepath.Walk(inputpath, func(path string, info os.FileInfo, err error) error {
 		if ! info.Mode().IsRegular() {
@@ -113,21 +144,16 @@ func mainImplUsingGoroutine(blacklist, whitelist []string, inputpath string) err
 
 func mainImplStanderd(blacklist, whitelist []string, inputpath string) error {
 	b := NewFinder(blacklist, whitelist)
+	printer := printMatchString
+	if *silent {
+		printer = printDummyMatchString
+	}
 	err := filepath.Walk(inputpath, func(path string, info os.FileInfo, err error) error {
 		if ! info.Mode().IsRegular() {
 			return err
 		}
 
-		filedata, err := ioutil.ReadFile(path)
-		if err != nil {
-			return err
-		}
-
-		b.Find(filedata, func(match []byte) {
-			if ! *silent {
-				fmt.Printf("%s: %s\n", path, string(match))
-			}
-		})
+		b.Find(path, printer)
 		return nil
 	})
 	return err
