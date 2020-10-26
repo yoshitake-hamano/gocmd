@@ -50,6 +50,30 @@ func NewFinder(blacklist, whitelist []string) *Finder {
 	}
 }
 
+func isTokenable(b byte) bool {
+	// see ascii table
+	if 0x20 <= b && 0x7e <= b {
+		return true
+	}
+	return b == '\t'
+}
+
+func split(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	startOfToken := 0
+	for i:=0; i<len(data); i++ {
+		if isTokenable(data[i]) {
+			startOfToken = i
+			break
+		}
+	}
+	for i:=startOfToken; i<len(data); i++ {
+		if ! isTokenable(data[i]) {
+			return i+1, data[startOfToken:i], nil
+		}
+	}
+	return 0, nil, nil
+}
+
 func (b *Finder) Find(path string, fn func(path, keyword, text string)) {
 	r, err := os.Open(path)
 	defer r.Close()
@@ -60,6 +84,7 @@ func (b *Finder) Find(path string, fn func(path, keyword, text string)) {
 	}
 
 	scanner := bufio.NewScanner(r)
+	scanner.Split(split)
 	for scanner.Scan() {
 		t := scanner.Text()
 		match := true
@@ -96,16 +121,7 @@ func readRegexps(filename string) ([]string, error) {
 }
 
 func printMatchString(path, keyword, text string) {
-	t := strings.TrimFunc(text, func(r rune) bool {
- 		switch r {
- 		case rune('\r'):
- 		case rune('\n'):
- 		case rune('\t'):
- 			return true
- 		}
-		// unicode.In(r, unicode.N, unicode.L, unicode.M)
-		return false
-	})
+	t := strings.Trim(text, "\t,")
 	fmt.Printf("%s,%s,%s\n", path, keyword, t)
 }
 
