@@ -52,14 +52,17 @@ func NewFinder(blacklist, whitelist []string) *Finder {
 
 func isTokenable(b byte) bool {
 	// see ascii table
-	if 0x20 <= b && 0x7e <= b {
+	if 0x20 <= b && b <= 0x7e {
 		return true
 	}
 	return b == '\t'
 }
 
 func split(data []byte, atEOF bool) (advance int, token []byte, err error) {
-	startOfToken := 0
+	if len(data) == 0 {
+		return 0, nil, nil
+	}
+	startOfToken := len(data)
 	for i:=0; i<len(data); i++ {
 		if isTokenable(data[i]) {
 			startOfToken = i
@@ -71,7 +74,7 @@ func split(data []byte, atEOF bool) (advance int, token []byte, err error) {
 			return i+1, data[startOfToken:i], nil
 		}
 	}
-	return 0, nil, nil
+	return len(data), data[startOfToken:], nil
 }
 
 func (b *Finder) Find(path string, fn func(path, keyword, text string)) {
@@ -87,6 +90,9 @@ func (b *Finder) Find(path string, fn func(path, keyword, text string)) {
 	scanner.Split(split)
 	for scanner.Scan() {
 		t := scanner.Text()
+		if t == "" {
+			continue
+		}
 		match := true
 		var keyword *regexp.Regexp
 		if match, keyword = b.matchBlacklist(t); !match {
