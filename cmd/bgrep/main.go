@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -77,15 +78,7 @@ func split(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	return len(data), data[startOfToken:], nil
 }
 
-func (b *Finder) Find(path string, fn func(path, keyword, text string)) {
-	r, err := os.Open(path)
-	defer r.Close()
-
-	if err != nil {
-		fmt.Print(err)
-		return
-	}
-
+func (b *Finder) Find(path string, r io.Reader, fn func(path, keyword, text string)) {
 	scanner := bufio.NewScanner(r)
 	scanner.Split(split)
 	for scanner.Scan() {
@@ -146,7 +139,15 @@ func mainImplUsingGoroutine(blacklist, whitelist []string, inputpath string) err
 	worker := func() {
 		defer wg.Done()
 		for p := range ch {
-			b.Find(p, printer)
+			r, err := os.Open(p)
+
+			if err != nil {
+				fmt.Print(err)
+				r.Close()
+				continue
+			}
+			b.Find(p, r, printer)
+			r.Close()
 		}
 	}
 	const sizeOfGorotine = 10
@@ -177,7 +178,14 @@ func mainImplStanderd(blacklist, whitelist []string, inputpath string) error {
 			return err
 		}
 
-		b.Find(path, printer)
+		r, err := os.Open(path)
+		defer r.Close()
+
+		if err != nil {
+			fmt.Print(err)
+			return nil
+		}
+		b.Find(path, r, printer)
 		return nil
 	})
 	return err
