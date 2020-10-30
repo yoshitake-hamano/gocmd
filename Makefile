@@ -23,7 +23,7 @@ test: all ## Test
 
 .PHONY: benchmark
 benchmark: all ## Benchmark
-	cd cmd/cw; go test ./... -bench=. -trace a.trace
+	cd cmd/cw; go test -bench=. -trace a.trace
 
 help: ## Show this help.
 	@sed -ne "/@sed/!s/## //p" $(MAKEFILE_LIST)

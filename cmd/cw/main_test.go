@@ -7,21 +7,17 @@ import(
 var blacklist = []string{"(?i)hellO", "(?i)wOr"}
 var whitelist = []string{"WOR"}
 
-func BenchmarkOneFile(b *testing.B) {
-	b.ResetTimer()
-	*silent = true
+func TestOneFile(t *testing.T) {
 	err := mainImplStanderd(blacklist, whitelist, ".")
 	if err != nil {
-		b.Fatalf("unexpected err = %W\n", err)
+		t.Fatalf("unexpected err = %W\n", err)
 	}
 }
 
-func BenchmarkParentDirectory(b *testing.B) {
-	b.ResetTimer()
-	*silent = true
+func TestParentDirectory(t *testing.T) {
 	err := mainImplStanderd(blacklist, whitelist, "../..")
 	if err != nil {
-		b.Fatalf("unexpected err = %W\n", err)
+		t.Fatalf("unexpected err = %W\n", err)
 	}
 }
 
