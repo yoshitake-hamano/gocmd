@@ -2,6 +2,8 @@ package main
 
 import (
 	"bufio"
+	"bytes"
+	"debug/elf"
 	"flag"
 	"fmt"
 	"io"
@@ -78,7 +80,7 @@ func split(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	return len(data), data[startOfToken:], nil
 }
 
-func (b *Finder) Find(path string, r io.Reader, fn func(path, keyword, text string)) {
+func (b *Finder) findBinary(path string, r io.Reader, fn func(path, keyword, text string)) error {
 	scanner := bufio.NewScanner(r)
 	scanner.Split(split)
 	for scanner.Scan() {
@@ -96,6 +98,36 @@ func (b *Finder) Find(path string, r io.Reader, fn func(path, keyword, text stri
 		}
 		fn(path, keyword.String(), t)
 	}
+	return nil
+}
+
+func (b *Finder) findElf(path string, r io.Reader, fn func(path, keyword, text string)) error {
+	f, err := elf.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	for _, section := range f.Sections {
+		src, err := section.Data()
+		if err != nil {
+			return err
+		}
+		err = b.findBinary(path, bytes.NewReader(src), fn)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (b *Finder) Find(path string, r io.Reader, fn func(path, keyword, text string)) error {
+	r1 := bytes.NewBuffer(nil)
+	r2 := io.TeeReader(r, r1)
+	if b.findElf(path, r1, fn) == nil {
+		return nil
+	}
+	return b.findBinary(path, r2, fn)
 }
 
 func check(err error) {
