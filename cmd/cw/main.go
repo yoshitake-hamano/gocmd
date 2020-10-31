@@ -80,7 +80,8 @@ func split(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	return len(data), data[startOfToken:], nil
 }
 
-func (b *Finder) findBinary(path string, r io.Reader, fn func(path, keyword, text string)) error {
+func (b *Finder) findBinary(path, filetype, section string, r io.Reader,
+	fn func(path, filetype, section, keyword, text string)) error {
 	scanner := bufio.NewScanner(r)
 	scanner.Split(split)
 	for scanner.Scan() {
@@ -96,12 +97,12 @@ func (b *Finder) findBinary(path string, r io.Reader, fn func(path, keyword, tex
 		if match, _ = b.matchWhitelist(t); match {
 			continue
 		}
-		fn(path, keyword.String(), t)
+		fn(path, filetype, section, keyword.String(), t)
 	}
 	return nil
 }
 
-func (b *Finder) findElf(path string, r io.Reader, fn func(path, keyword, text string)) error {
+func (b *Finder) findElf(path string, r io.Reader, fn func(path, filetype, section, keyword, text string)) error {
 	f, err := elf.Open(path)
 	if err != nil {
 		return err
@@ -122,7 +123,7 @@ func (b *Finder) findElf(path string, r io.Reader, fn func(path, keyword, text s
 		if err != nil {
 			return err
 		}
-		err = b.findBinary(path, bytes.NewReader(src), fn)
+		err = b.findBinary(path, "elf", section.Name, bytes.NewReader(src), fn)
 		if err != nil {
 			return err
 		}
@@ -130,13 +131,13 @@ func (b *Finder) findElf(path string, r io.Reader, fn func(path, keyword, text s
 	return nil
 }
 
-func (b *Finder) Find(path string, r io.Reader, fn func(path, keyword, text string)) error {
+func (b *Finder) Find(path string, r io.Reader, fn func(path, filetype, section, keyword, text string)) error {
 	r1 := bytes.NewBuffer(nil)
 	r2 := io.TeeReader(r, r1)
 	if b.findElf(path, r1, fn) == nil {
 		return nil
 	}
-	return b.findBinary(path, r2, fn)
+	return b.findBinary(path, "bin", "", r2, fn)
 }
 
 func check(err error) {
@@ -160,12 +161,12 @@ func readRegexps(filename string) ([]string, error) {
 	return regexps, nil
 }
 
-func printMatchString(path, keyword, text string) {
+func printMatchString(path, filetype, section, keyword, text string) {
 	t := strings.Trim(text, "\t,")
-	fmt.Printf("%s,%s,%s\n", path, keyword, t)
+	fmt.Printf("%s,%s,%s,%s,%s\n", path, filetype, section, keyword, t)
 }
 
-func printDummyMatchString(path, keyword, text string) {
+func printDummyMatchString(path, filetype, section, keyword, text string) {
 }
 
 func mainImplUsingGoroutine(blacklist, whitelist []string, inputpath string) error {
