@@ -109,6 +109,15 @@ func (b *Finder) findElf(path string, r io.Reader, fn func(path, keyword, text s
 	defer f.Close()
 
 	for _, section := range f.Sections {
+		// @see binutils strings.c
+		// #define DATA_FLAGS (SEC_ALLOC | SEC_LOAD | SEC_HAS_CONTENTS)
+		if (section.Flags & elf.SHF_ALLOC) != 0 {
+			continue
+		}
+		if section.Type == elf.SHT_NOBITS {
+			continue
+		}
+		
 		src, err := section.Data()
 		if err != nil {
 			return err
