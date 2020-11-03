@@ -19,6 +19,17 @@ type Finder struct {
 	whitelist []*regexp.Regexp
 }
 
+type ResultWriter interface {
+	Write(path, filetype, section, keyword, text string)
+}
+
+type ResultWriterImpl struct {
+	w io.Writer
+}
+
+type DummyResultWriter struct {
+}
+
 func compileRegexps(regexps []string) []*regexp.Regexp {
 	compiled := make([]*regexp.Regexp, 0, len(regexps))
 	for _, reg := range regexps {
@@ -28,28 +39,19 @@ func compileRegexps(regexps []string) []*regexp.Regexp {
 	return compiled
 }
 
-func (b *Finder) matchWhitelist(src string) (bool, *regexp.Regexp) {
-	for _, wr := range b.whitelist {
-		if wr.MatchString(src) {
-			return true, wr
+func matchRegexps(str string, regexps []*regexp.Regexp) (bool, *regexp.Regexp) {
+	for _, reg := range regexps {
+		if reg.MatchString(str) {
+			return true, reg
 		}
 	}
 	return false, nil
 }
 
-func (b *Finder) matchBlacklist(src string) (bool, *regexp.Regexp) {
-	for _, wr := range b.blacklist {
-		if wr.MatchString(src) {
-			return true, wr
-		}
-	}
-	return false, nil
-}
-
-func NewFinder(blacklist, whitelist []string) *Finder {
+func NewFinder(blacklist, whitelist []*regexp.Regexp) *Finder {
 	return &Finder{
-		blacklist: compileRegexps(blacklist),
-		whitelist: compileRegexps(whitelist),
+		blacklist: blacklist,
+		whitelist: whitelist,
 	}
 }
 
@@ -80,8 +82,7 @@ func split(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	return len(data), data[startOfToken:], nil
 }
 
-func (b *Finder) findBinary(path, filetype, section string, r io.Reader,
-	fn func(path, filetype, section, keyword, text string)) error {
+func (b *Finder) findBinary(path, filetype, section string, r io.Reader, rw ResultWriter) error {
 	scanner := bufio.NewScanner(r)
 	scanner.Split(split)
 	for scanner.Scan() {
@@ -91,18 +92,18 @@ func (b *Finder) findBinary(path, filetype, section string, r io.Reader,
 		}
 		match := true
 		var keyword *regexp.Regexp
-		if match, keyword = b.matchBlacklist(t); !match {
+		if match, keyword = matchRegexps(t, b.blacklist); !match {
 			continue
 		}
-		if match, _ = b.matchWhitelist(t); match {
+		if match, _ = matchRegexps(t, b.whitelist); match {
 			continue
 		}
-		fn(path, filetype, section, keyword.String(), t)
+		rw.Write(path, filetype, section, keyword.String(), t)
 	}
 	return nil
 }
 
-func (b *Finder) findElf(path string, r io.Reader, fn func(path, filetype, section, keyword, text string)) error {
+func (b *Finder) findElf(path string, r io.Reader, rw ResultWriter) error {
 	f, err := elf.Open(path)
 	if err != nil {
 		return err
@@ -123,7 +124,7 @@ func (b *Finder) findElf(path string, r io.Reader, fn func(path, filetype, secti
 		if err != nil {
 			return err
 		}
-		err = b.findBinary(path, "elf", section.Name, bytes.NewReader(src), fn)
+		err = b.findBinary(path, "elf", section.Name, bytes.NewReader(src), rw)
 		if err != nil {
 			return err
 		}
@@ -131,13 +132,30 @@ func (b *Finder) findElf(path string, r io.Reader, fn func(path, filetype, secti
 	return nil
 }
 
-func (b *Finder) Find(path string, r io.Reader, fn func(path, filetype, section, keyword, text string)) error {
+func (b *Finder) Find(path string, r io.Reader, rw ResultWriter) error {
 	r1 := bytes.NewBuffer(nil)
 	r2 := io.TeeReader(r, r1)
-	if b.findElf(path, r1, fn) == nil {
+	if b.findElf(path, r1, rw) == nil {
 		return nil
 	}
-	return b.findBinary(path, "bin", "", r2, fn)
+	return b.findBinary(path, "bin", "", r2, rw)
+}
+
+func NewResultWriter(w io.Writer) ResultWriter {
+	if w == nil {
+		return &DummyResultWriter{}
+	}
+	return &ResultWriterImpl{
+		w: w,
+	}
+}
+
+func (rw *ResultWriterImpl) Write(path, filetype, section, keyword, text string) {
+	t := strings.Trim(text, "\t,")
+	fmt.Fprintf(rw.w, "%s,%s,%s,%s,%s\n", path, filetype, section, keyword, t)
+}
+
+func (dw *DummyResultWriter) Write(path, filetype, section, keyword, text string) {
 }
 
 func check(err error) {
@@ -146,7 +164,7 @@ func check(err error) {
 	}
 }
 
-func readRegexps(filename string) ([]string, error) {
+func readRegexps(filename string) ([]*regexp.Regexp, error) {
 	regexps := make([]string, 0)
 	fp, err := os.Open(filename)
 	defer fp.Close()
@@ -158,23 +176,12 @@ func readRegexps(filename string) ([]string, error) {
 	for scanner.Scan() {
 		regexps = append(regexps, scanner.Text())
 	}
-	return regexps, nil
+	return compileRegexps(regexps), nil
 }
 
-func printMatchString(path, filetype, section, keyword, text string) {
-	t := strings.Trim(text, "\t,")
-	fmt.Printf("%s,%s,%s,%s,%s\n", path, filetype, section, keyword, t)
-}
-
-func printDummyMatchString(path, filetype, section, keyword, text string) {
-}
-
-func mainImplUsingGoroutine(blacklist, whitelist []string, inputpath string) error {
+func mainImplUsingGoroutine(blacklist, whitelist []*regexp.Regexp,
+	inputpath string, ignorePath []*regexp.Regexp, rw ResultWriter) error {
 	b := NewFinder(blacklist, whitelist)
-	printer := printMatchString
-	if *silent {
-		printer = printDummyMatchString
-	}
 
 	ch := make(chan string)
 	wg := sync.WaitGroup{}
@@ -188,7 +195,7 @@ func mainImplUsingGoroutine(blacklist, whitelist []string, inputpath string) err
 				r.Close()
 				continue
 			}
-			b.Find(p, r, printer)
+			b.Find(p, r, rw)
 			r.Close()
 		}
 	}
@@ -198,6 +205,9 @@ func mainImplUsingGoroutine(blacklist, whitelist []string, inputpath string) err
 		go worker()
 	}
 	err := filepath.Walk(inputpath, func(path string, info os.FileInfo, err error) error {
+		if match, _ := matchRegexps(inputpath, ignorePath); match {
+			return nil
+		}
 		if ! info.Mode().IsRegular() {
 			return err
 		}
@@ -209,13 +219,12 @@ func mainImplUsingGoroutine(blacklist, whitelist []string, inputpath string) err
 	return err
 }
 
-func mainImplStanderd(blacklist, whitelist []string, inputpath string) error {
+func mainImplStanderd(blacklist, whitelist []*regexp.Regexp, inputpath string, ignorePath []*regexp.Regexp, rw ResultWriter) error {
 	b := NewFinder(blacklist, whitelist)
-	printer := printMatchString
-	if *silent {
-		printer = printDummyMatchString
-	}
 	err := filepath.Walk(inputpath, func(path string, info os.FileInfo, err error) error {
+		if match, _ := matchRegexps(inputpath, ignorePath); match {
+			return nil
+		}
 		if ! info.Mode().IsRegular() {
 			return err
 		}
@@ -227,27 +236,35 @@ func mainImplStanderd(blacklist, whitelist []string, inputpath string) error {
 			fmt.Print(err)
 			return nil
 		}
-		b.Find(path, r, printer)
+		b.Find(path, r, rw)
 		return nil
 	})
 	return err
 }
 
-var silent = flag.Bool("s", false, "silent(for benchmark)")
-
 func main() {
 	var (
-		inputpath  = flag.String("i", "", "input path")
-		blacklistfile = flag.String("b", "", "regexp file(blacklist)")
-		whitelistfile = flag.String("w", "", "regexp file(whitelist)")
+		inputPath  = flag.String("i", "", "input path")
+		ignorePathFile = flag.String("ignore", "", "ignore path file")
+//		passListFile = flag.String("pass", "", "pass list file")
+		blackListFile = flag.String("black", "", "regexp file(blacklist)")
+		whiteListFile = flag.String("white", "", "regexp file(whitelist)")
+		newPathList = flag.String("new_pass_list", "", "new pass list")
+//		result = flag.String("result", "", "result(new_pass_list - pass_list)")
 	)
 	flag.Parse()
 
-	blacklist, err := readRegexps(*blacklistfile)
+	ignorePath, err := readRegexps(*ignorePathFile)
+	blacklist, err := readRegexps(*blackListFile)
 	check(err)
-	whitelist, err := readRegexps(*whitelistfile)
+	whitelist, err := readRegexps(*whiteListFile)
 	check(err)
 
-	err = mainImplStanderd(blacklist, whitelist, *inputpath)
+	fp, err := os.Open(*newPathList)
+	defer fp.Close()
+	buffer := bytes.NewBuffer(nil)
+	
+	rw := NewResultWriter(io.MultiWriter(fp, buffer))
+	err = mainImplUsingGoroutine(blacklist, whitelist, *inputPath, ignorePath, rw)
 	check(err)
 }

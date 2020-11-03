@@ -15,7 +15,7 @@ etags:
 	find . -name "*.h" -o -name "*.c" -o -name "*.hpp" -o -name "*.cpp" | xargs etags
 
 test: all
-	$(CW) -i example -b blacklist.regexp -w whitelist.regexp
+	$(CW) -i example -black blacklist.regexp -white whitelist.regexp
 
 clean:
 	rm -f  $(TARGETS)
