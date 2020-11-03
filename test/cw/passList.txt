@@ -1,0 +1,2 @@
+example,bin,,(?i)hellO,Hello World
+example,bin,,(?i)wOr,/Users/yoshitake/workspace/myhome/gocmd/test/cw/
