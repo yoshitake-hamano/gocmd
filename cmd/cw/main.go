@@ -297,7 +297,7 @@ func main() {
 
 	fp := os.Stdout
 	if *newPathList != "-" {
-		fp, err = os.Open(*newPathList)
+		fp, err = os.Create(*newPathList)
 		check("-new_pass_list error: %v", err)
 		defer fp.Close()
 	}
@@ -309,7 +309,7 @@ func main() {
 
 	rslt := os.Stdout
 	if *result != "-" {
-		rslt, err = os.Open(*result)
+		rslt, err = os.Create(*result)
 		check("-result error: %v", err)
 		defer rslt.Close()
 	}
