@@ -158,9 +158,9 @@ func (rw *ResultWriterImpl) Write(path, filetype, section, keyword, text string)
 func (dw *DummyResultWriter) Write(path, filetype, section, keyword, text string) {
 }
 
-func check(err error) {
+func check(format string, err error) {
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf(format, err))
 	}
 }
 
@@ -177,6 +177,21 @@ func readRegexps(filename string) ([]*regexp.Regexp, error) {
 		regexps = append(regexps, scanner.Text())
 	}
 	return compileRegexps(regexps), nil
+}
+
+func buildSubstract(file string) (map[string]bool, error) {
+	f, err := os.Open(file)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+	substract := make(map[string]bool)
+	for scanner.Scan() {
+		substract[scanner.Text()] = true
+	}
+	return substract, nil
 }
 
 func mainImplUsingGoroutine(blacklist, whitelist []*regexp.Regexp,
@@ -242,29 +257,69 @@ func mainImplStanderd(blacklist, whitelist []*regexp.Regexp, inputpath string, i
 	return err
 }
 
+func printResult(newPassList io.Reader, result io.Writer, passList map[string]bool) error {
+	scanner := bufio.NewScanner(newPassList)
+	for scanner.Scan() {
+		t := scanner.Text()
+		if _, ok := passList[t]; ok {
+			continue
+		}
+		fmt.Fprintln(result, t)
+	}
+	return nil
+}
+
 func main() {
 	var (
 		inputPath  = flag.String("i", "", "input path")
 		ignorePathFile = flag.String("ignore", "", "ignore path file")
-//		passListFile = flag.String("pass", "", "pass list file")
+		passListFile = flag.String("pass", "", "pass list file")
 		blackListFile = flag.String("black", "", "regexp file(blacklist)")
 		whiteListFile = flag.String("white", "", "regexp file(whitelist)")
-		newPathList = flag.String("new_pass_list", "", "new pass list")
-//		result = flag.String("result", "", "result(new_pass_list - pass_list)")
+		newPathList = flag.String("new_pass_list", "-", "new pass list")
+		result = flag.String("result", "-", "result(new_pass_list - pass_list)")
+		err error
 	)
 	flag.Parse()
 
-	ignorePath, err := readRegexps(*ignorePathFile)
-	blacklist, err := readRegexps(*blackListFile)
-	check(err)
-	whitelist, err := readRegexps(*whiteListFile)
-	check(err)
+	var ignorePath []*regexp.Regexp
+	if *ignorePathFile != "" {
+		ignorePath, err = readRegexps(*ignorePathFile)
+		check("-ignore error: %v", err)
+	}
 
-	fp, err := os.Open(*newPathList)
-	defer fp.Close()
+	blacklist, err := readRegexps(*blackListFile)
+	if err != nil {
+		check("-black error: %v", err)
+	}
+	whitelist, err := readRegexps(*whiteListFile)
+	check("-white error: %v", err)
+
+	fp := os.Stdout
+	if *newPathList != "-" {
+		fp, err = os.Open(*newPathList)
+		check("-new_pass_list error: %v", err)
+		defer fp.Close()
+	}
 	buffer := bytes.NewBuffer(nil)
 	
-	rw := NewResultWriter(io.MultiWriter(fp, buffer))
-	err = mainImplUsingGoroutine(blacklist, whitelist, *inputPath, ignorePath, rw)
-	check(err)
+	npl := NewResultWriter(io.MultiWriter(fp, buffer))
+	err = mainImplUsingGoroutine(blacklist, whitelist, *inputPath, ignorePath, npl)
+	check("finding err: %v", err)
+
+	rslt := os.Stdout
+	if *result != "-" {
+		rslt, err = os.Open(*result)
+		check("-result error: %v", err)
+		defer rslt.Close()
+	}
+
+	var passList map[string]bool
+	if *passListFile != "" {
+		passList, err = buildSubstract(*passListFile)
+		check("-pass error: %v", err)
+	}
+
+	err = printResult(buffer, rslt, passList)
+	check("result error: %v", err)
 }
