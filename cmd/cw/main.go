@@ -48,6 +48,16 @@ func matchRegexps(str string, regexps []*regexp.Regexp) (bool, *regexp.Regexp) {
 	return false, nil
 }
 
+func matchAllRegexps(str string, regexps []*regexp.Regexp) []*regexp.Regexp {
+	r := make([]*regexp.Regexp, 0)
+	for _, reg := range regexps {
+		if reg.MatchString(str) {
+			r = append(r, reg)
+		}
+	}
+	return r
+}
+
 func NewFinder(blacklist, whitelist []*regexp.Regexp) *Finder {
 	return &Finder{
 		blacklist: blacklist,
@@ -90,15 +100,12 @@ func (b *Finder) findBinary(path, filetype, section string, r io.Reader, rw Resu
 		if t == "" {
 			continue
 		}
-		match := true
-		var keyword *regexp.Regexp
-		if match, keyword = matchRegexps(t, b.blacklist); !match {
+		if match, _ := matchRegexps(t, b.whitelist); match {
 			continue
 		}
-		if match, _ = matchRegexps(t, b.whitelist); match {
-			continue
+		for _, keyword := range matchAllRegexps(t, b.blacklist) {
+			rw.Write(path, filetype, section, keyword.String(), t)
 		}
-		rw.Write(path, filetype, section, keyword.String(), t)
 	}
 	return nil
 }
