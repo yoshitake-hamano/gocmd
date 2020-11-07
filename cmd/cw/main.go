@@ -139,7 +139,13 @@ func (b *Finder) findElf(path string, r io.Reader, rw ResultWriter) error {
 	return nil
 }
 
-func (b *Finder) Find(path string, r io.Reader, rw ResultWriter) error {
+func (b *Finder) Find(path string, rw ResultWriter) error {
+	r, err := os.Open(path)
+	defer r.Close()
+	if err != nil {
+		return err
+	}
+
 	r1 := bytes.NewBuffer(nil)
 	r2 := io.TeeReader(r, r1)
 	if b.findElf(path, r1, rw) == nil {
@@ -201,6 +207,20 @@ func buildSubstract(file string) (map[string]bool, error) {
 	return substract, nil
 }
 
+func eachFile(inputPath string, ignorePath []*regexp.Regexp, fn func(path string)) error {
+	err := filepath.Walk(inputPath, func(path string, info os.FileInfo, err error) error {
+		if match, _ := matchRegexps(inputPath, ignorePath); match {
+			return nil
+		}
+		if ! info.Mode().IsRegular() {
+			return err
+		}
+		fn(path)
+		return nil
+	})
+	return err
+}
+
 func mainImplUsingGoroutine(blacklist, whitelist []*regexp.Regexp,
 	inputpath string, ignorePath []*regexp.Regexp, rw ResultWriter) error {
 	b := NewFinder(blacklist, whitelist)
@@ -210,15 +230,7 @@ func mainImplUsingGoroutine(blacklist, whitelist []*regexp.Regexp,
 	worker := func() {
 		defer wg.Done()
 		for p := range ch {
-			r, err := os.Open(p)
-
-			if err != nil {
-				fmt.Print(err)
-				r.Close()
-				continue
-			}
-			b.Find(p, r, rw)
-			r.Close()
+			b.Find(p, rw)
 		}
 	}
 	const sizeOfGorotine = 10
@@ -226,15 +238,8 @@ func mainImplUsingGoroutine(blacklist, whitelist []*regexp.Regexp,
 	for i:=0; i<sizeOfGorotine; i++ {
 		go worker()
 	}
-	err := filepath.Walk(inputpath, func(path string, info os.FileInfo, err error) error {
-		if match, _ := matchRegexps(inputpath, ignorePath); match {
-			return nil
-		}
-		if ! info.Mode().IsRegular() {
-			return err
-		}
+	err := eachFile(inputpath, ignorePath, func(path string) {
 		ch <- path
-		return nil
 	})
 	close(ch)
 	wg.Wait()
@@ -243,23 +248,8 @@ func mainImplUsingGoroutine(blacklist, whitelist []*regexp.Regexp,
 
 func mainImplStanderd(blacklist, whitelist []*regexp.Regexp, inputpath string, ignorePath []*regexp.Regexp, rw ResultWriter) error {
 	b := NewFinder(blacklist, whitelist)
-	err := filepath.Walk(inputpath, func(path string, info os.FileInfo, err error) error {
-		if match, _ := matchRegexps(inputpath, ignorePath); match {
-			return nil
-		}
-		if ! info.Mode().IsRegular() {
-			return err
-		}
-
-		r, err := os.Open(path)
-		defer r.Close()
-
-		if err != nil {
-			fmt.Print(err)
-			return nil
-		}
-		b.Find(path, r, rw)
-		return nil
+	err := eachFile(inputpath, ignorePath, func(path string) {
+		b.Find(path, rw)
 	})
 	return err
 }
