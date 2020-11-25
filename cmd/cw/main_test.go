@@ -29,7 +29,7 @@ func BenchmarkStanderd(b *testing.B) {
 	b.ResetTimer()
 	for i:=0; i<b.N; i++ {
 		rw := NewResultWriter(os.Stdout)
-		err := mainImplStanderd(blacklist, whitelist, "../../..", ignorePath, rw)
+		err := mainImplStanderd(blacklist, whitelist, "../..", ignorePath, rw)
 		if err != nil {
 			b.Fatalf("unexpected err = %v\n", err)
 		}
@@ -40,7 +40,7 @@ func BenchmarkUsingGoroutine(b *testing.B) {
 	b.ResetTimer()
 	for i:=0; i<b.N; i++ {
 		rw := NewResultWriter(os.Stdout)
-		err := mainImplUsingGoroutine(blacklist, whitelist, "../../..", ignorePath, rw)
+		err := mainImplUsingGoroutine(blacklist, whitelist, "../..", ignorePath, rw)
 		if err != nil {
 			b.Fatalf("unexpected err = %v\n", err)
 		}
