@@ -164,7 +164,7 @@ func NewResultWriter(w io.Writer) ResultWriter {
 }
 
 func (rw *ResultWriterImpl) Write(path, filetype, section, keyword, text string) {
-	t := strings.Trim(text, "\t,")
+	t := strings.Trim(text, "\t,\"")
 	fmt.Fprintf(rw.w, "%s,%s,%s,%s,%s\n", path, filetype, section, keyword, t)
 }
 
