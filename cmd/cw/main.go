@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strings"
 	"sync"
 )
 
@@ -164,7 +163,8 @@ func NewResultWriter(w io.Writer) ResultWriter {
 }
 
 func (rw *ResultWriterImpl) Write(path, filetype, section, keyword, text string) {
-	t := strings.Trim(text, "\t,\"")
+	r := regexp.MustCompile("[\t,\"]")
+	t := r.ReplaceAllString(text, "")
 	fmt.Fprintf(rw.w, "%s,%s,%s,%s,%s\n", path, filetype, section, keyword, t)
 }
 
