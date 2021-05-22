@@ -61,27 +61,57 @@ func NewBranchHistory(repo *git.Repository, bref *plumbing.Reference) (*BranchHi
 }
 
 func (bh *BranchHistory)String() string {
-	buf := bytes.NewBuffer(make([]byte, 0, 10))
-	
-	buf.WriteString(fmt.Sprintf("%s\n", bh.BranchReference.Name()))
+	buf := bytes.NewBuffer(make([]byte, 0))
 	for i, node := range(bh.Nodes) {
-		buf.WriteString(fmt.Sprintf(" [%03d] %s %s\n", i, node.Commit.Hash, node.Commit.Author.When))
+		branchName := bh.BranchReference.Name()
+		buf.WriteString(fmt.Sprintf(" [%s] [%03d] %s %s\n", branchName, i, node.Commit.Hash, node.Commit.Author.When))
+
+		for _, bh := range(node.Branches) {
+			buf.WriteString(bh.String())
+		}
 	}
 	return buf.String()
 }
 
+func (bh *BranchHistory)Add(other *BranchHistory) error {
+	for i, node := range(other.Nodes) {
+		if bh.Nodes[i].Commit.Hash == node.Commit.Hash {
+			continue
+		}
+		other.Nodes = other.Nodes[i:]
+		bh.Nodes[i].Branches = append(bh.Nodes[i].Branches, other)
+		return nil
+	}
+	// same branch history
+	return nil
+}
+
+type GitGraphJsPrinter struct {
+	BaseBranchHistory *BranchHistory
+}
+
 func main() {
+	// todo: get branch name from argument
+	// todo: get tag filter from argument
+
 	repo, err := git.PlainOpen(".")
+	// todo: if error has occured, should find parent directory
 	check(err)
 
 	bite, err := repo.Branches()
 	check(err)
-	
+
+	var baseHistory *BranchHistory
 	bite.ForEach(func(bref *plumbing.Reference) error {
 		bh, err := NewBranchHistory(repo, bref)
 		check(err)
 
-		fmt.Printf("%s\n", bh)
+		if baseHistory == nil {
+			baseHistory = bh
+		}
+		baseHistory.Add(bh)
+
 		return nil
 	})
+	fmt.Printf("%s\n", baseHistory)
 }
