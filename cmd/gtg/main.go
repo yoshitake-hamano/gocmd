@@ -3,9 +3,11 @@ package main
 
 import (
 	"io"
+	"os"
 	"fmt"
 	"regexp"
 	"bytes"
+	"text/template"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
@@ -98,7 +100,13 @@ func JsVarString(name string) string {
 	return fmt.Sprintf("_%s", reg.ReplaceAllString(name, "_"))
 }
 
-func (g *GitGraphJsPrinter)printBranch(w io.StringWriter, jsBaseBranch, newBranch string) {
+func (g *GitGraphJsPrinter)printFirstBranch(w io.StringWriter, newBranch string) {
+	jsNewBranch := JsVarString(newBranch)
+	w.WriteString(fmt.Sprintf("var %s = %s.branch(\"%s\");\n", jsNewBranch, "gitgraph", newBranch))
+}
+
+func (g *GitGraphJsPrinter)printBranch(w io.StringWriter, baseBranch, newBranch string) {
+	jsBaseBranch := JsVarString(baseBranch)
 	jsNewBranch := JsVarString(newBranch)
 	w.WriteString(fmt.Sprintf("var %s = %s.branch(\"%s\");\n", jsNewBranch, jsBaseBranch, newBranch))
 }
@@ -124,13 +132,36 @@ func (g *GitGraphJsPrinter)printNode(w io.StringWriter, node *Node) {
 func (g *GitGraphJsPrinter)String() string {
 	buf := bytes.NewBuffer(make([]byte, 0))
 	baseBranch := g.BaseBranchHistory.BranchReference.Name().String()
-	g.printBranch(buf, "gitgraph", baseBranch)
+	g.printFirstBranch(buf, baseBranch)
 
 	for _, node := range g.BaseBranchHistory.Nodes {
 		g.printNode(buf, node)
 	}
 	return buf.String()
 }
+
+const indexTemplate = `
+<html>
+<head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gitgraph.js/1.8.3/gitgraph.min.js"></script>
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/gitgraph.js/1.8.3/gitgraph.min.css" />
+</head>
+
+<body>
+    <canvas id="gitGraph"></canvas>
+</body>
+
+<script>
+var gitgraph = new GitGraph({
+    template: "metro",
+    orientation: "horizontal",
+    mode: "compact",
+    elementId: "gitGraph"
+});
+{{.Body}}
+</script>
+</html>
+`
 
 // not supported: merge commit
 func main() {
@@ -157,9 +188,14 @@ func main() {
 		return nil
 	})
 
-//	fmt.Printf("%s", baseHistory)
 
 	ggjp := &GitGraphJsPrinter{baseHistory}
-//	fmt.Printf("%s\n", ggjp.BaseBranchHistory)
-	fmt.Printf("%s", ggjp)
+	t := template.New("index.html")
+	_, err = t.Parse(indexTemplate)
+	check(err)
+
+	err = t.Execute(os.Stdout,
+		struct {Body string} {
+			Body: ggjp.String()})
+	check(err)
 }
