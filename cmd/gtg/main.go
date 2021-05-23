@@ -88,12 +88,24 @@ func (bh *BranchHistory)String() string {
 }
 
 func (bh *BranchHistory)Add(other *BranchHistory) error {
-	for i, node := range(other.Nodes) {
-		if bh.Nodes[i].Commit.Hash == node.Commit.Hash {
+	prevBaseNode := bh.Nodes[0]
+	baseNode := bh.Nodes[0]
+        OUTER:
+	for i, n := range(other.Nodes) {
+		if baseNode.Commit.Hash == n.Commit.Hash {
+			prevBaseNode = baseNode
+			baseNode     = baseNode.Next
 			continue
 		}
+		for _, branch := range(prevBaseNode.ChildBranches) {
+			if branch.Nodes[0].Commit.Hash == n.Commit.Hash {
+				prevBaseNode = branch.Nodes[0]
+				baseNode     = branch.Nodes[0].Next
+				continue OUTER
+			}
+		}
 		other.Nodes = other.Nodes[i:]
-		bh.Nodes[i-1].ChildBranches = append(bh.Nodes[i-1].ChildBranches, other)
+		prevBaseNode.ChildBranches = append(prevBaseNode.ChildBranches, other)
 		return nil
 	}
 	log.Printf("same or independent branch: %s %s\n",
@@ -123,7 +135,7 @@ type GitGraphJsPrinter struct {
 }
 
 func JsVarString(name string) string {
-	reg := regexp.MustCompile("[[:^alpha:]]")
+	reg := regexp.MustCompile("[[:^alnum:]]")
 	return fmt.Sprintf("_%s", reg.ReplaceAllString(name, "_"))
 }
 
@@ -315,7 +327,6 @@ func main() {
 		}
 		dir = tmp
 	}
-	fmt.Printf("%s\n", dir)
 
 	bite, err := repo.Branches()
 	check(err)
