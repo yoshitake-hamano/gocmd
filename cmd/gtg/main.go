@@ -154,7 +154,8 @@ func (g *GitGraphJsPrinter)printBranch(w io.StringWriter, baseBranch, newBranch 
 func (g *GitGraphJsPrinter)printCommit(w io.StringWriter, branch string, c *object.Commit) {
 	jsBranch := JsVarString(branch)
 	id := c.ID().String()
-	subject := strings.TrimSpace(strings.SplitN(c.Message, "\r\n", 1)[0])
+	subject := strings.TrimSpace(strings.SplitN(c.Message, "\n", 2)[0])
+	subject = strings.ReplaceAll(subject, "\"", "")
 
 	w.WriteString(fmt.Sprintf("%s.commit({sha1: \"%s\", message: \"%s\"});\n",
 		jsBranch, id[0:7], subject))
