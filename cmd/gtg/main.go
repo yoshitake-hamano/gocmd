@@ -2,12 +2,14 @@
 package main
 
 import (
+	"bytes"
 	"io"
 	"os"
+	"io/ioutil"
 	"flag"
 	"fmt"
+	"log"
 	"regexp"
-	"bytes"
 	"text/template"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -265,9 +267,16 @@ func filterSimple(bh *BranchHistory) {
 func main() {
 	var (
 		filterMode  = flag.String("f", "", "filter mode(full, alltags, simple)")
+		verbose     = flag.Bool("v", false, "verbose")
 	)
 	flag.Parse()
 	// todo: get branch name from argument
+
+	if *verbose {
+		log.SetOutput(os.Stderr)
+	} else {
+		log.SetOutput(ioutil.Discard)
+	}
 
 	repo, err := git.PlainOpen(".")
 	// todo: if error has occured, should find parent directory
@@ -278,10 +287,11 @@ func main() {
 
 	var baseHistory *BranchHistory
 	bite.ForEach(func(bref *plumbing.Reference) error {
+		log.Printf("found branch: %s\n", bref.Name())
+
 		bh, err := NewBranchHistory(repo, bref)
 		check(err)
 
-		// fmt.Fprintf(os.Stderr, "found branch: %s\n", bref.Name())
 		if baseHistory == nil {
 			baseHistory = bh
 		} else {
@@ -296,6 +306,8 @@ func main() {
 
 	// Addn tag infomation
 	tite.ForEach(func(tref *plumbing.Reference) error {
+		log.Printf("found tag: %s\n", tref.Name())
+
 		n := baseHistory.Find(tref.Hash())
 		if n == nil {
 			return nil
