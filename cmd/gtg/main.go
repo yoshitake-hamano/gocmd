@@ -9,6 +9,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"path/filepath"
 	"regexp"
 	"text/template"
 	"github.com/go-git/go-git/v5"
@@ -95,7 +96,7 @@ func (bh *BranchHistory)Add(other *BranchHistory) error {
 		bh.Nodes[i-1].ChildBranches = append(bh.Nodes[i-1].ChildBranches, other)
 		return nil
 	}
-	fmt.Fprintf(os.Stderr, "same or independent branch: %s %s\n",
+	log.Printf("same or independent branch: %s %s\n",
 		bh.BranchReference.Name().String(),
 		other.BranchReference.Name().String())
 	return nil
@@ -286,7 +287,7 @@ func filterSimple(bh *BranchHistory) {
 // not supported: merge commit
 func main() {
 	var (
-		filterMode  = flag.String("f", "", "filter mode(full, alltags, simple)")
+		filterMode  = flag.String("f", "simple", "filter mode(full, alltags, simple)")
 		verbose     = flag.Bool("v", false, "verbose")
 	)
 	flag.Parse()
@@ -298,26 +299,40 @@ func main() {
 		log.SetOutput(ioutil.Discard)
 	}
 
-	repo, err := git.PlainOpen(".")
-	// todo: if error has occured, should find parent directory
-	check(err)
+	var repo *git.Repository
+	dir, _ := filepath.Abs(".")
+	for {
+		var err error
+		repo, err = git.PlainOpen(dir)
+		if err == nil {
+			break
+		}
+
+		tmp := filepath.Dir(dir)
+		if dir == tmp {
+			fmt.Fprintf(os.Stderr, "error: not found git repository\n")
+			os.Exit(1)
+		}
+		dir = tmp
+	}
+	fmt.Printf("%s\n", dir)
 
 	bite, err := repo.Branches()
 	check(err)
-
+	
 	var baseHistory *BranchHistory
 	bite.ForEach(func(bref *plumbing.Reference) error {
 		log.Printf("found branch: %s\n", bref.Name())
-
+	
 		bh, err := NewBranchHistory(repo, bref)
 		check(err)
-
+	
 		if baseHistory == nil {
 			baseHistory = bh
 		} else {
 			baseHistory.Add(bh)
 		}
-
+	
 		return nil
 	})
 
@@ -344,7 +359,7 @@ func main() {
 	case "simple":
 		filterSimple(baseHistory)
 	default:
-		fmt.Fprintf(os.Stderr, "unsupported filter mode: %s", *filterMode)
+		fmt.Fprintf(os.Stderr, "error: unsupported filter mode: %s\n", *filterMode)
 		os.Exit(1)
 	}
 
