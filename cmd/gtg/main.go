@@ -4,6 +4,7 @@ package main
 import (
 	"io"
 	"os"
+	"flag"
 	"fmt"
 	"regexp"
 	"bytes"
@@ -195,10 +196,56 @@ var gitgraph = new GitGraph({
 </html>
 `
 
+func filterAllTags(bh *BranchHistory) {
+}
+
+func updateNodeNext(nodes []*Node) []*Node {
+	for i, n := range nodes {
+		if i == len(nodes) - 1 {
+			n.Next = nil
+		} else {
+			n.Next = nodes[i+1]
+		}
+	}
+	return nodes
+}
+
+func filterSimpleNodes(nodes []*Node) []*Node {
+	var remaining []*Node
+	for i, n := range nodes {
+		// if first commit in branch, do not filter
+		if i == 0 {
+			remaining = append(remaining, n)
+			continue
+		}
+		// if last commit in branch, do not filter
+		if i == len(nodes) - 1 {
+			remaining = append(remaining, n)
+			continue
+		}
+		if len(n.ChildBranches) != 0 {
+			remaining = append(remaining, n)
+			for _, b := range(n.ChildBranches) {
+				b.Nodes = filterSimpleNodes(b.Nodes)
+			}
+			continue
+		}
+	}
+	remaining = updateNodeNext(remaining)
+	return remaining
+}
+
+func filterSimple(bh *BranchHistory) {
+	bh.Nodes = filterSimpleNodes(bh.Nodes)
+}
+
 // not supported: merge commit
 func main() {
+	var (
+		filterMode  = flag.String("f", "", "filter mode(full, alltags, simple)")
+	)
+	flag.Parse()
 	// todo: get branch name from argument
-	// todo: get tag filter from argument
 
 	repo, err := git.PlainOpen(".")
 	// todo: if error has occured, should find parent directory
@@ -220,9 +267,18 @@ func main() {
 		return nil
 	})
 
+	switch *filterMode {
+	case "full":
+	case "alltags":
+		filterAllTags(baseHistory)
+	case "simple":
+		filterSimple(baseHistory)
+	default:
+		check(fmt.Errorf("unsupported filter mode: %s", *filterMode))
+	}
 
 	ggjp := &GitGraphJsPrinter{baseHistory}
-	t := template.New("index.html")
+	t := template.New("")
 	_, err = t.Parse(indexTemplate)
 	check(err)
 
