@@ -24,6 +24,7 @@ type Node struct {
 	BranchName      string
 	Commit          *object.Commit
 	ChildBranches   []*BranchHistory
+	TagNames        []string
 	Next            *Node
 }
 
@@ -37,7 +38,7 @@ func CreateNodeSlice(branch string, c *object.Commit) ([]*Node, error) {
 	nodes := make([]*Node, 0)
 	ite := c
 	for {
-		n := Node{BranchName: branch, Commit: ite}
+		n := Node{BranchName: branch, Commit: ite, TagNames: []string{}}
 		if len(nodes) != 0 {
 			n.Next = nodes[0]
 		}
@@ -92,7 +93,25 @@ func (bh *BranchHistory)Add(other *BranchHistory) error {
 		bh.Nodes[i-1].ChildBranches = append(bh.Nodes[i-1].ChildBranches, other)
 		return nil
 	}
-	// same branch history
+	fmt.Fprintf(os.Stderr, "same or independent branch: %s %s\n",
+		bh.BranchReference.Name().String(),
+		other.BranchReference.Name().String())
+	return nil
+}
+
+func (bh *BranchHistory)Find(hash plumbing.Hash) *Node {
+	for _, n := range(bh.Nodes) {
+		if hash == n.Commit.Hash {
+			return n
+		}
+
+		for _, b := range(n.ChildBranches) {
+			cn := b.Find(hash)
+			if cn != nil {
+				return cn
+			}
+		}
+	}
 	return nil
 }
 
@@ -163,6 +182,9 @@ func (g *GitGraphJsPrinter)String() string {
 		}
 
 		g.printCommit(buf, node.BranchName, node.Commit)
+		for _, t := range(node.TagNames) {
+			g.printTag(buf, node.BranchName, t)
+		}
 		for _, b := range(node.ChildBranches) {
 			newBranchName := b.BranchReference.Name().String()
 			g.printBranch(buf, node.BranchName, newBranchName)
@@ -196,9 +218,6 @@ var gitgraph = new GitGraph({
 </html>
 `
 
-func filterAllTags(bh *BranchHistory) {
-}
-
 func updateNodeNext(nodes []*Node) []*Node {
 	for i, n := range nodes {
 		if i == len(nodes) - 1 {
@@ -208,6 +227,9 @@ func updateNodeNext(nodes []*Node) []*Node {
 		}
 	}
 	return nodes
+}
+
+func filterAllTags(bh *BranchHistory) {
 }
 
 func filterSimpleNodes(nodes []*Node) []*Node {
@@ -259,11 +281,27 @@ func main() {
 		bh, err := NewBranchHistory(repo, bref)
 		check(err)
 
+		// fmt.Fprintf(os.Stderr, "found branch: %s\n", bref.Name())
 		if baseHistory == nil {
 			baseHistory = bh
+		} else {
+			baseHistory.Add(bh)
 		}
-		baseHistory.Add(bh)
 
+		return nil
+	})
+
+	tite, err := repo.Tags()
+	check(err)
+
+	// Addn tag infomation
+	tite.ForEach(func(tref *plumbing.Reference) error {
+		n := baseHistory.Find(tref.Hash())
+		if n == nil {
+			return nil
+		}
+
+		n.TagNames = append(n.TagNames, tref.Name().String())
 		return nil
 	})
 
@@ -274,7 +312,8 @@ func main() {
 	case "simple":
 		filterSimple(baseHistory)
 	default:
-		check(fmt.Errorf("unsupported filter mode: %s", *filterMode))
+		fmt.Fprintf(os.Stderr, "unsupported filter mode: %s", *filterMode)
+		os.Exit(1)
 	}
 
 	ggjp := &GitGraphJsPrinter{baseHistory}
