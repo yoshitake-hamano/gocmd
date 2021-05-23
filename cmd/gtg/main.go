@@ -296,48 +296,36 @@ func filterSimple(bh *BranchHistory) {
 	bh.Nodes = filterSimpleNodes(bh.Nodes, filterSimpleTarget)
 }
 
-// not supported: merge commit
-func main() {
-	var (
-		filterMode  = flag.String("f", "simple", "filter mode(full, alltags, simple)")
-		verbose     = flag.Bool("v", false, "verbose")
-	)
-	flag.Parse()
-	// todo: get branch name from argument
-
-	if *verbose {
-		log.SetOutput(os.Stderr)
-	} else {
-		log.SetOutput(ioutil.Discard)
-	}
-
-	var repo *git.Repository
+func openCurrentRepository() (*git.Repository, error) {
 	dir, _ := filepath.Abs(".")
 	for {
-		var err error
-		repo, err = git.PlainOpen(dir)
+		repo, err := git.PlainOpen(dir)
 		if err == nil {
-			break
+			return repo, nil
 		}
 
 		tmp := filepath.Dir(dir)
 		if dir == tmp {
-			fmt.Fprintf(os.Stderr, "error: not found git repository\n")
-			os.Exit(1)
+			return nil, fmt.Errorf("error: not found git repository")
 		}
 		dir = tmp
 	}
+}
 
+func createBranchHistory(repo *git.Repository) (*BranchHistory, error) {
 	bite, err := repo.Branches()
-	check(err)
+	if err != nil {
+		return nil, err
+	}
 	
 	var baseHistory *BranchHistory
-	bite.ForEach(func(bref *plumbing.Reference) error {
+	err = bite.ForEach(func(bref *plumbing.Reference) error {
 		log.Printf("found branch: %s\n", bref.Name())
 	
 		bh, err := NewBranchHistory(repo, bref)
-		check(err)
-	
+		if err != nil {
+			return err
+		}
 		if baseHistory == nil {
 			baseHistory = bh
 		} else {
@@ -346,6 +334,89 @@ func main() {
 	
 		return nil
 	})
+	if err != nil {
+		return nil, err
+	}
+	if baseHistory == nil {
+		return nil, fmt.Errorf("no branch found")
+	}
+	return baseHistory, nil
+}
+
+func createBranchHistoryOrder(repo *git.Repository, branchOrder []string) (*BranchHistory, error) {
+	bite, err := repo.Branches()
+	if err != nil {
+		return nil, err
+	}
+	
+	var historyMap map[string]*BranchHistory = map[string]*BranchHistory{}
+	err = bite.ForEach(func(bref *plumbing.Reference) error {
+		log.Printf("found branch: %s\n", bref.Name())
+	
+		bh, err := NewBranchHistory(repo, bref)
+		if err != nil {
+			return err
+		}
+		historyMap[bref.Name().String()] = bh
+	
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var baseHistory *BranchHistory
+	for _, branch := range(branchOrder) {
+		bh, ok := historyMap[branch]
+		if ! ok {
+			log.Printf("branch not found: %s", branch)
+			continue
+		}
+		if baseHistory == nil {
+			baseHistory = bh
+		} else {
+			baseHistory.Add(bh)
+		}
+	}
+	if baseHistory == nil {
+		return nil, fmt.Errorf("no branch found")
+	}
+	return baseHistory, nil
+}
+
+var branchNames stringsFlag
+
+// not supported: merge commit
+func main() {
+	var (
+		filterMode  = flag.String("f", "simple", "filter mode(full, alltags, simple)")
+		verbose     = flag.Bool("v", false, "verbose")
+	)
+	flag.Var(&branchNames, "b", "branch")
+	flag.Parse()
+
+	if *verbose {
+		log.SetOutput(os.Stderr)
+	} else {
+		log.SetOutput(ioutil.Discard)
+	}
+
+	repo, err := openCurrentRepository()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
+
+	var baseHistory *BranchHistory
+	if len(branchNames) == 0 {
+		baseHistory, err = createBranchHistory(repo)
+	} else {
+		baseHistory, err = createBranchHistoryOrder(repo, branchNames)
+	}
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
 
 	tite, err := repo.Tags()
 	check(err)
