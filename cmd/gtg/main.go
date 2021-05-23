@@ -23,6 +23,7 @@ type Node struct {
 	BranchName      string
 	Commit          *object.Commit
 	ChildBranches   []*BranchHistory
+	Next            *Node
 }
 
 type BranchHistory struct {
@@ -36,6 +37,9 @@ func CreateNodeSlice(branch string, c *object.Commit) ([]*Node, error) {
 	ite := c
 	for {
 		n := Node{BranchName: branch, Commit: ite}
+		if len(nodes) != 0 {
+			n.Next = nodes[0]
+		}
 		nodes = append([]*Node{&n}, nodes...)
 		var err error
 		ite, err = ite.Parent(0)
@@ -121,12 +125,20 @@ func (g *GitGraphJsPrinter)printTag(w io.StringWriter, branch, tag string) {
 	w.WriteString(fmt.Sprintf("%s.tag(\"%s\");\n", jsBranch, tag))
 }
 
-func (g *GitGraphJsPrinter)printNode(w io.StringWriter, node *Node) {
-	g.printCommit(w, node.BranchName, node.Commit)
-	for _, b := range(node.ChildBranches) {
-		newBranchName := b.BranchReference.Name().String()
-		g.printBranch(w, node.BranchName, newBranchName)
+func removeOldestNode(nodes []*Node) (*Node, []*Node) {
+	if len(nodes) == 0 {
+		return nil, nodes
 	}
+	oldestIndex := 0
+	for i, n := range(nodes) {
+		oldest := nodes[oldestIndex].Commit.Author.When
+		when   := n.Commit.Author.When
+		if oldest.After(when) {
+			oldestIndex = i
+		}
+	}
+	n := nodes[oldestIndex]
+	return n, append(nodes[:oldestIndex], nodes[oldestIndex+1:]...)
 }
 
 func (g *GitGraphJsPrinter)String() string {
@@ -134,8 +146,28 @@ func (g *GitGraphJsPrinter)String() string {
 	baseBranch := g.BaseBranchHistory.BranchReference.Name().String()
 	g.printFirstBranch(buf, baseBranch)
 
-	for _, node := range g.BaseBranchHistory.Nodes {
-		g.printNode(buf, node)
+	if len(g.BaseBranchHistory.Nodes) == 0 {
+		return buf.String()
+	}
+	nextNodes := []*Node{g.BaseBranchHistory.Nodes[0]}
+
+	for {
+		if len(nextNodes) == 0 {
+			break
+		}
+		var node *Node
+		node, nextNodes = removeOldestNode(nextNodes)
+		if node.Next != nil {
+			nextNodes = append(nextNodes, node.Next)
+		}
+
+		g.printCommit(buf, node.BranchName, node.Commit)
+		for _, b := range(node.ChildBranches) {
+			newBranchName := b.BranchReference.Name().String()
+			g.printBranch(buf, node.BranchName, newBranchName)
+
+			nextNodes = append(nextNodes, b.Nodes[0])
+		}
 	}
 	return buf.String()
 }
