@@ -231,36 +231,56 @@ func updateNodeNext(nodes []*Node) []*Node {
 	return nodes
 }
 
-func filterAllTags(bh *BranchHistory) {
-}
-
-func filterSimpleNodes(nodes []*Node) []*Node {
+func filterSimpleNodes(nodes []*Node, filter func(index int, nodes []*Node) bool) []*Node {
 	var remaining []*Node
 	for i, n := range nodes {
-		// if first commit in branch, do not filter
-		if i == 0 {
-			remaining = append(remaining, n)
-			continue
-		}
-		// if last commit in branch, do not filter
-		if i == len(nodes) - 1 {
-			remaining = append(remaining, n)
-			continue
-		}
+		// if branch base node, do not filter
 		if len(n.ChildBranches) != 0 {
 			remaining = append(remaining, n)
 			for _, b := range(n.ChildBranches) {
-				b.Nodes = filterSimpleNodes(b.Nodes)
+				b.Nodes = filterSimpleNodes(b.Nodes, filter)
 			}
 			continue
+		}
+
+		if filter(i, nodes) != true {
+			remaining = append(remaining, n)
 		}
 	}
 	remaining = updateNodeNext(remaining)
 	return remaining
 }
 
+func filterAllTagsTarget(index int, nodes []*Node) bool {
+	if filterSimpleTarget(index, nodes) != true {
+		return false
+	}
+
+	n := nodes[index]
+	if len(n.TagNames) != 0 {
+		return false
+	}
+	return true
+}
+
+func filterAllTags(bh *BranchHistory) {
+	bh.Nodes = filterSimpleNodes(bh.Nodes, filterAllTagsTarget)
+}
+
+func filterSimpleTarget(index int, nodes []*Node) bool {
+	// if first commit in branch, do not filter
+	if index == 0 {
+		return false
+	}
+	// if last commit in branch, do not filter
+	if index == len(nodes) - 1 {
+		return false
+	}
+	return true
+}
+
 func filterSimple(bh *BranchHistory) {
-	bh.Nodes = filterSimpleNodes(bh.Nodes)
+	bh.Nodes = filterSimpleNodes(bh.Nodes, filterSimpleTarget)
 }
 
 // not supported: merge commit
