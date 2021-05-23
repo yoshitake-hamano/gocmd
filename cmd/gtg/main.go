@@ -133,6 +133,7 @@ func (bh *BranchHistory)Find(hash plumbing.Hash) *Node {
 
 type GitGraphJsPrinter struct {
 	BaseBranchHistory *BranchHistory
+	SuppressTag       bool
 }
 
 func JsVarString(name string) string {
@@ -155,13 +156,18 @@ func (g *GitGraphJsPrinter)printCommit(w io.StringWriter, branch string, c *obje
 	jsBranch := JsVarString(branch)
 	id := c.ID().String()
 	subject := strings.TrimSpace(strings.SplitN(c.Message, "\n", 2)[0])
-	subject = strings.ReplaceAll(subject, "\"", "")
+
+	reg := regexp.MustCompile("[\"'\\\\]")
+	subject = reg.ReplaceAllString(subject, "")
 
 	w.WriteString(fmt.Sprintf("%s.commit({sha1: \"%s\", message: \"%s\"});\n",
 		jsBranch, id[0:7], subject))
 }
 
 func (g *GitGraphJsPrinter)printTag(w io.StringWriter, branch, tag string) {
+	if g.SuppressTag {
+		return
+	}
 	jsBranch := JsVarString(branch)
 	w.WriteString(fmt.Sprintf("%s.tag(\"%s\");\n", jsBranch, tag))
 }
@@ -397,6 +403,7 @@ func main() {
 	var (
 		filterMode  = flag.String("f", "simple", "filter mode(full, alltags, simple)")
 		verbose     = flag.Bool("v", false, "verbose")
+		suppressTag = flag.Bool("suppress_tag", false, "suppress tag commit")
 	)
 	flag.Var(&branchNames, "b", "branch order(multi setting)(ex. -b refs/heads/master -b refs/heads/develop")
 	flag.Parse()
@@ -451,7 +458,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	ggjp := &GitGraphJsPrinter{baseHistory}
+	ggjp := &GitGraphJsPrinter{
+		BaseBranchHistory: baseHistory,
+		SuppressTag: *suppressTag}
 	t := template.New("")
 	_, err = t.Parse(indexTemplate)
 	check(err)
