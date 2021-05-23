@@ -11,6 +11,7 @@ import (
 	"log"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"text/template"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -152,7 +153,11 @@ func (g *GitGraphJsPrinter)printBranch(w io.StringWriter, baseBranch, newBranch 
 
 func (g *GitGraphJsPrinter)printCommit(w io.StringWriter, branch string, c *object.Commit) {
 	jsBranch := JsVarString(branch)
-	w.WriteString(fmt.Sprintf("%s.commit(\"%s\");\n", jsBranch, c.ID()))
+	id := c.ID().String()
+	subject := strings.TrimSpace(strings.SplitN(c.Message, "\r\n", 1)[0])
+
+	w.WriteString(fmt.Sprintf("%s.commit({sha1: \"%s\", message: \"%s\"});\n",
+		jsBranch, id[0:7], subject))
 }
 
 func (g *GitGraphJsPrinter)printTag(w io.StringWriter, branch, tag string) {
