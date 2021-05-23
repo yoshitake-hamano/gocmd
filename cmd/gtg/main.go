@@ -392,7 +392,7 @@ func main() {
 		filterMode  = flag.String("f", "simple", "filter mode(full, alltags, simple)")
 		verbose     = flag.Bool("v", false, "verbose")
 	)
-	flag.Var(&branchNames, "b", "branch")
+	flag.Var(&branchNames, "b", "branch order(multi setting)(ex. -b refs/heads/master -b refs/heads/develop")
 	flag.Parse()
 
 	if *verbose {
