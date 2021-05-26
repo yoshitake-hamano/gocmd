@@ -405,7 +405,28 @@ func main() {
 		verbose     = flag.Bool("v", false, "verbose")
 		suppressTag = flag.Bool("suppress_tag", false, "suppress tag commit")
 	)
-	flag.Var(&branchNames, "b", "branch order(multi setting)(ex. -b refs/heads/master -b refs/heads/develop")
+	flag.Var(&branchNames, "b", "branch order(multi setting)(ex. -b refs/heads/master -b refs/heads/develop)")
+	flag.Usage = func() {
+		o := flag.CommandLine.Output()
+		cmd := os.Args[0]
+		fmt.Fprintf(o, "Usage of %s:\n", cmd)
+		fmt.Fprintf(o, "  %s is a git graph outputter\n", cmd)
+		flag.PrintDefaults()
+		fmt.Fprintf(o, `
+support:
+  - only first parent(see --first-parent in git command)
+
+not support:
+  - merge commit
+
+`)
+		fmt.Fprintf(o, "example:\n")
+		fmt.Fprintf(o, "  %s -f full\n", cmd)
+		fmt.Fprintf(o, "  %s -f alltags\n", cmd)
+		fmt.Fprintf(o, "  %s -f simple\n", cmd)
+		fmt.Fprintf(o, "  %s -suppress_tag=true\n", cmd)
+		fmt.Fprintf(o, "  %s -suppress_tsg=true -v -f simple -b refs/heads/master -b refs/heads/develop\n", cmd)
+	}
 	flag.Parse()
 
 	if *verbose {
