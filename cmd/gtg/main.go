@@ -222,11 +222,13 @@ func (g *GitGraphJsPrinter)String() string {
 	return buf.String()
 }
 
+// find gitgraph.js version in following URL
+// https://cdnjs.com/libraries/gitgraph.js
 const indexTemplate = `
 <html>
 <head>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gitgraph.js/1.8.3/gitgraph.min.js"></script>
-<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/gitgraph.js/1.8.3/gitgraph.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gitgraph.js/1.15.2/gitgraph.min.js"></script>
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/gitgraph.js/1.15.2/gitgraph.min.css" />
 </head>
 
 <body>
