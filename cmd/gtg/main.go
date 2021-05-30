@@ -171,7 +171,7 @@ func filterSimpleNodes(nodes []*Node, filter func(index int, nodes []*Node) bool
 	return remaining
 }
 
-func filterAllTagsTarget(index int, nodes []*Node) bool {
+func filterTagsTarget(index int, nodes []*Node) bool {
 	if filterSimpleTarget(index, nodes) != true {
 		return false
 	}
@@ -183,8 +183,8 @@ func filterAllTagsTarget(index int, nodes []*Node) bool {
 	return true
 }
 
-func filterAllTags(bh *BranchHistory) {
-	bh.Nodes = filterSimpleNodes(bh.Nodes, filterAllTagsTarget)
+func filterTags(bh *BranchHistory) {
+	bh.Nodes = filterSimpleNodes(bh.Nodes, filterTagsTarget)
 }
 
 func filterSimpleTarget(index int, nodes []*Node) bool {
@@ -296,7 +296,7 @@ var branchNames stringsFlag
 // not supported: merge commit
 func main() {
 	var (
-		filterMode  = flag.String("f", "simple", "filter mode(full, alltags, simple)")
+		filterMode  = flag.String("f", "simple", "filter mode(full, tags, simple)")
 		verbose     = flag.Bool("v", false, "verbose")
 		suppressTag = flag.Bool("suppress_tag", false, "suppress tag commit")
 	)
@@ -317,7 +317,7 @@ not support:
 `)
 		fmt.Fprintf(o, "example:\n")
 		fmt.Fprintf(o, "  %s -f full\n", cmd)
-		fmt.Fprintf(o, "  %s -f alltags\n", cmd)
+		fmt.Fprintf(o, "  %s -f tags\n", cmd)
 		fmt.Fprintf(o, "  %s -f simple\n", cmd)
 		fmt.Fprintf(o, "  %s -suppress_tag=true\n", cmd)
 		fmt.Fprintf(o, "  %s -suppress_tsg=true -v -f simple -b refs/heads/master -b refs/heads/develop\n", cmd)
@@ -365,8 +365,8 @@ not support:
 
 	switch *filterMode {
 	case "full":
-	case "alltags":
-		filterAllTags(baseHistory)
+	case "tags":
+		filterTags(baseHistory)
 	case "simple":
 		filterSimple(baseHistory)
 	default:
