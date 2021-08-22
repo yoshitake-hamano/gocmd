@@ -3,6 +3,7 @@ module github.com/yoshitake-hamano/gocmd
 go 1.14
 
 require (
+	github.com/aws/aws-lambda-go v1.26.0 // indirect
 	github.com/chromedp/cdproto v0.0.0-20210808225517-c36c1bd4c35e // indirect
 	github.com/chromedp/chromedp v0.7.4 // indirect
 	github.com/go-git/go-git/v5 v5.3.0 // indirect

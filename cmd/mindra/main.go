@@ -7,71 +7,74 @@ import (
 	"fmt"
 	"log"
 	"time"
+	"os"
 
 	"github.com/yoshitake-hamano/gocmd/line"
 	"github.com/chromedp/chromedp"
 )
 
-func check(err error) {
-	if err != nil {
-		panic(err)
-	}
+type MyEvent struct {
+	Lat float64 `json:"lat"`
+	Lon float64 `json:"lon"`
 }
 
 func mindraURL(lat, lon float64) string {
 	return fmt.Sprintf("https://9db.jp/dqwalk/map#%f,%f,14", lat, lon)
 }
 
-func scrape(lat, lon float64, headless bool) ([]byte, error) {
+func scrape(lat, lon float64) ([]byte, error) {
+	log.Printf("scrape(lat=%f, lon=%f)", lat, lon)
+
+	opts := chromedp.DefaultExecAllocatorOptions[:]
+	opts = append(opts,
+		chromedp.CombinedOutput(os.Stdout),
+		chromedp.Flag("vervose", true),
+		chromedp.Flag("enable-logging", true),
+		chromedp.Flag("log-level", "0"),
+	)
+	opts = appendExecAllocatorOptions(opts)
+	
+	allocCtx, _ := chromedp.NewExecAllocator(context.Background(), opts...)
+	
+	// create chrome instance
 	ctx, cancel := chromedp.NewContext(
-		context.Background(),
+		allocCtx,
 		chromedp.WithLogf(log.Printf),
 	)
-	if headless == false {
-		opts := append(chromedp.DefaultExecAllocatorOptions[:],
-			chromedp.Flag("headless", false),
-			chromedp.Flag("disable-gpu", false),
-			chromedp.Flag("enable-automation", false),
-			chromedp.Flag("disable-extensions", false),
-			chromedp.Flag("hide-scrollbars", false),
-			chromedp.Flag("mute-audio", false),
-		)
-	
-		allocCtx, _ := chromedp.NewExecAllocator(context.Background(), opts...)
-	
-		// create chrome instance
-		ctx, cancel = chromedp.NewContext(
-			allocCtx,
-			chromedp.WithLogf(log.Printf),
-		)
-	}
 	// create a timeout
 	ctx, cancel = context.WithTimeout(ctx, 300*time.Second)
 	defer cancel()
 
 	var imageBuf []byte
 	err := chromedp.Run(ctx,
-	chromedp.Navigate(mindraURL(lat, lon)),
+		chromedp.Navigate(mindraURL(lat, lon)),
 		chromedp.Click(`.iziModal-button-close`, chromedp.ByQuery),
 		// 祠OFF
 		chromedp.Click(`li[data-id="h1"]`, chromedp.ByQuery),
 		chromedp.Click(`li[data-id="h2"]`, chromedp.ByQuery),
 
+		chromedp.Sleep(time.Second * 5),
 		chromedp.Screenshot(`#map`, &imageBuf, chromedp.NodeVisible, chromedp.ByID),
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("chromedp.Run: %v", err)
 	}
 
-	return imageBuf, err
+	return imageBuf, nil
 }
 
-func main() {
+func mainImpl(lat, lon float64) error {
+	fmt.Printf("lat=%f, lon=%f", lat, lon)
 
-	img, err := scrape(MINDRA_LAT, MINDRA_LON, true)
-	check(err)
+	img, err := scrape(lat, lon)
+	if err != nil {
+		return fmt.Errorf("scrape: %v", err)
+	}
 
-	url := mindraURL(MINDRA_LAT, MINDRA_LON)
+	url := mindraURL(lat, lon)
 	err = line.NotifyLineImage(bytes.NewReader(img), "map.jpg", url, LINE_NOTIFY_TOKEN)
-	check(err)
+	if err != nil {
+		fmt.Errorf("line.NotifyLineImage: %v", err)
+	}
+	return nil
 }

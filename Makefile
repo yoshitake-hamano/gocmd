@@ -3,14 +3,26 @@
 ## Targets
 ## 
 
-
 .PHONY: all
-all: ## Build all
+all: build-lambda build-normal ## Build all
+
+.PHONY: build-lambda
+build-lambda: ## Build lambda binary
+	cd cmd/mindra; GOOS=linux go build -tags lambda -o ../../binlambda
+	cd binlambda; zip mindra.zip mindra
+
+.PHONY: build-normal
+build-normal: ## Build normal binary
 	go generate ./...
 	go build -o bin ./...
 
+.PHONY: deploy-lambda
+deploy-lambda: build-lambda ## Deploy to AWS Lambda
+	cd binlambda; aws lambda update-function-code --no-cli-pager --function-name mindra --zip-file fileb://mindra.zip
+
 .PHONY: clean
 clean: ## Clean
+	$(RM) binlambda/*
 	$(RM) bin/*
 	cd test/cpputest; $(MAKE) clean
 
