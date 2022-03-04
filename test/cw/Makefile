@@ -1,12 +1,13 @@
 # File: Makefile - last edit
 # yoshitake 16-Nov-2019
 
-CXX        := g++
-LD_LIBRARY :=
-INCLUDE    :=
-CPPFLAGS   := -Wall -g -O0 $(INCLUDE) $(LD_LIBRARY)
-TARGETS    := $(basename $(wildcard *.c))
-CW         := ../../bin/cw
+CXX          := g++
+LD_LIBRARY   :=
+INCLUDE      :=
+CPPFLAGS     := -Wall -g -O0 $(INCLUDE) $(LD_LIBRARY)
+TARGETS      := $(basename $(wildcard *.c))
+TARGETS_DSYM := $(TARGETS:%=%.dSYM)
+CW           := ../../bin/cw
 
 all: $(TARGETS)
 
@@ -35,7 +36,7 @@ test-fails: all
 
 clean:
 	$(RM) $(TARGETS)
-	$(RM) *~
+	$(RM) -r $(TARGETS_DSYM)
 	$(RM) newPassList.txt result.txt
 
 # Log

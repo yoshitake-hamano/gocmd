@@ -8,6 +8,7 @@ HEADERS      := $(wildcard *.h)
 MOCK_HEADERS := $(HEADERS:%.h=mock_%.cpp)
 SRCS         := $(wildcard test_*.cpp)
 TARGETS      := $(SRCS:%.cpp=%)
+TARGETS_DSYM := $(TARGETS:%=%.dSYM)
 CPPFLAGS     := -g -Wall -lcpputest  -lcpputestext
 GPP          := g++
 
@@ -23,6 +24,7 @@ mock: $(MOCK_HEADERS) ## Build mock
 .PHONY: clean
 clean: ## Clean
 	$(RM) $(MOCK_HEADERS) $(TARGETS)
+	$(RM) -r $(TARGETS_DSYM)
 
 mock_%.cpp: %.h
 	../../bin/createmock -vervose -file $^ > $@

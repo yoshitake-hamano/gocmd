@@ -24,7 +24,11 @@ deploy-lambda: build-lambda ## Deploy to AWS Lambda
 clean: ## Clean
 	$(RM) binlambda/*
 	$(RM) bin/*
-	cd test/cpputest; $(MAKE) clean
+	$(MAKE) clean -C test/cpputest
+	$(MAKE) clean -C test/cw
+	$(MAKE) clean -C test/blackout
+	$(RM) cmd/createmock/parser.go
+	$(RM) cmd/createmock/y.output
 
 .PHONY: test
 test: all ## Test
@@ -32,6 +36,7 @@ test: all ## Test
 	cd test/scripts; ./testMain.sh
 	$(MAKE) test -C test/cpputest
 	$(MAKE) test -C test/cw
+	$(MAKE) test -C test/blackout
 
 .PHONY: benchmark
 benchmark: all ## Benchmark
