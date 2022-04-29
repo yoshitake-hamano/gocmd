@@ -3,6 +3,7 @@
 BIN_DIR=../../bin
 HELLO=${BIN_DIR}/hello
 CREATEMOCK="${BIN_DIR}/createmock -arg"
+EXCELGO="${BIN_DIR}/excelgo"
 
 function dumpStack() {
     local i=0
@@ -52,12 +53,38 @@ function assertIntEquals() {
     fi
 }
 
+function assertIntNotEquals() {
+    expect=${1}
+    actual=${2}
+    if [ ${expect} -eq ${actual} ]; then
+        echo "assertIntEquals fails"
+        echo "expect = ${expect}, actual = ${actual}"
+        flunk
+    fi
+}
+
 function assertReturnsOK() {
     s=`${1} "${2}"`
     result=${?}
     echo "${1} ${2}"
     echo "${s}"
     assertIntEquals 0 ${result}
+}
+
+function assertReturnsOKMultiArgs() {
+    s=`${1} ${2}`
+    result=${?}
+    echo "${1} ${2}"
+    echo "${s}"
+    assertIntEquals 0 ${result}
+}
+
+function assertReturnsNGMultiArgs() {
+    s=`${1} ${2}`
+    result=${?}
+    echo "${1} ${2}"
+    echo "${s}"
+    assertIntNotEquals 0 ${result}
 }
 
 function assertExec() {
@@ -306,5 +333,21 @@ function testSuiteCreatemock() {
     testSuiteCreatemockArgumentType
 }
 
+function testSuiteExcelgoReturnsOK() {
+    assertReturnsOKMultiArgs "${EXCELGO}" "-v -excel ../excelgo/variable.xlsx -sheet Sheet1 -target TARGET1"
+}
+
+function testSuiteExcelgoReturnsNG() {
+    assertReturnsNGMultiArgs "${EXCELGO}" "-v -excel nofile.xlsx -sheet Sheet1 -target TARGET1"
+    assertReturnsNGMultiArgs "${EXCELGO}" "-v -excel ../excelgo/variable.xlsx -sheet NoSheet -target TARGET1"
+    assertReturnsNGMultiArgs "${EXCELGO}" "-v -excel ../excelgo/variable.xlsx -sheet Sheet1 -target NOTARGET"
+}
+
+function testSuiteExcelgo() {
+    testSuiteExcelgoReturnsOK
+    testSuiteExcelgoReturnsNG
+}
+
 testSuiteHello
 testSuiteCreatemock
+testSuiteExcelgo
