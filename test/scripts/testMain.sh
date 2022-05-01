@@ -334,13 +334,13 @@ function testSuiteCreatemock() {
 }
 
 function testSuiteExcelgoReturnsOK() {
-    assertReturnsOKMultiArgs "${EXCELGO}" "-v -excel ../excelgo/variable.xlsx -sheet Sheet1 -target TARGET1"
+    assertReturnsOKMultiArgs "${EXCELGO}" "-v -excel ../excelgo/variable.xlsx -sheet Sheet1 -target TARGET1 -template ../excelgo/template -output ../build"
 }
 
 function testSuiteExcelgoReturnsNG() {
-    assertReturnsNGMultiArgs "${EXCELGO}" "-v -excel nofile.xlsx -sheet Sheet1 -target TARGET1"
-    assertReturnsNGMultiArgs "${EXCELGO}" "-v -excel ../excelgo/variable.xlsx -sheet NoSheet -target TARGET1"
-    assertReturnsNGMultiArgs "${EXCELGO}" "-v -excel ../excelgo/variable.xlsx -sheet Sheet1 -target NOTARGET"
+    assertReturnsNGMultiArgs "${EXCELGO}" "-v -excel nofile.xlsx -sheet Sheet1 -target TARGET1 -template ../excelgo/template -output ../build"
+    assertReturnsNGMultiArgs "${EXCELGO}" "-v -excel ../excelgo/variable.xlsx -sheet NoSheet -target TARGET1 -template ../excelgo/template -output ../build"
+    assertReturnsNGMultiArgs "${EXCELGO}" "-v -excel ../excelgo/variable.xlsx -sheet Sheet1 -target NOTARGET -template ../excelgo/template -output ../build"
 }
 
 function testSuiteExcelgo() {

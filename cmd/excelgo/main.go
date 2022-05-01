@@ -4,9 +4,12 @@ import (
 	"flag"
 	"fmt"
 	"github.com/tealeg/xlsx"
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
+	"text/template"
 )
 
 const (
@@ -14,13 +17,25 @@ const (
 	TARGET_ROW_INDEX = 0
 )
 
-func check(err error) {
+func check(title string, err error) {
 	if err != nil {
-		panic(err)
+		e := fmt.Errorf("%s: %v", title, err)
+		panic(e)
 	}
 }
 
-func valiableMap(excelFilePath, sheetName, target string) (map[string]string, error) {
+func validateDirectory(path string) error {
+	info, err := os.Stat(path)
+	if err != nil {
+		return err
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("is not directory: %s", path)
+	}
+	return nil
+}
+
+func createValiableMap(excelFilePath, sheetName, target string) (map[string]string, error) {
 	excel, err := xlsx.OpenFile(excelFilePath)
 	if err != nil {
 		return nil, err
@@ -34,7 +49,6 @@ func valiableMap(excelFilePath, sheetName, target string) (map[string]string, er
 	idxTarget := -1
 	for i, _ := range sheet.Cols {
 		cell := sheet.Cell(TARGET_ROW_INDEX, i)
-		log.Printf("cell %s", cell.Value)
 		if i == NAME_COL_INDEX {
 			// skip name column
 			continue
@@ -59,6 +73,28 @@ func valiableMap(excelFilePath, sheetName, target string) (map[string]string, er
 		vm[nameCell.Value] = valueCell.Value
 	}
 	return vm, nil
+}
+
+func createTemplatedFile(tpath, opath string, vm map[string]string) error {
+	text, err := os.ReadFile(tpath)
+	if err != nil {
+		return err
+	}
+
+	tpl, err := template.New(opath).Parse(string(text))
+	if err != nil {
+		return err
+	}
+
+	out, err := os.Create(opath)
+	defer out.Close()
+	if err != nil {
+		return err
+	}
+	if err := tpl.Execute(out, vm); err != nil {
+		return err
+	}
+	return nil
 }
 
 func main() {
@@ -87,12 +123,43 @@ func main() {
 		log.SetOutput(ioutil.Discard)
 	}
 
-	vm, err := valiableMap(*excelFilePath, *sheetName, *target)
-	check(err)
-	log.Printf("excel    = %s", *excelFilePath)
-	log.Printf("sheet    = %s", *sheetName)
-	log.Printf("target   = %s", *target)
-	log.Printf("template = %s", *templateDirectory)
-	log.Printf("output   = %s", *outputDirectory)
-	log.Printf("vm       = %v", vm)
+	err := validateDirectory(*templateDirectory)
+	check("template directory", err)
+
+	err = validateDirectory(*outputDirectory)
+	check("output directory", err)
+
+	vm, err := createValiableMap(*excelFilePath, *sheetName, *target)
+	check("valiable map", err)
+	log.Printf("variable map = %v", vm)
+
+	err = filepath.Walk(*templateDirectory, func(path string, info fs.FileInfo, err error) error {
+		if path == *templateDirectory {
+			return nil
+		}
+		relPath, err := filepath.Rel(*templateDirectory, path)
+		if err != nil {
+			return err
+		}
+		outputPath := filepath.Join(*outputDirectory, relPath)
+
+		// is dir
+		if info.IsDir() {
+			err = validateDirectory(outputPath)
+			if err == nil {
+				// already have this directory(outputPath)
+				return nil
+			}
+			err = os.Mkdir(outputPath, info.Mode())
+			return err
+		}
+
+		// is file
+		log.Printf("generating %s", outputPath)
+		err = createTemplatedFile(path, outputPath, vm)
+		check("create template files", err)
+
+		return nil
+	})
+	check("walk template directory", err)
 }
