@@ -1,4 +1,3 @@
-
 package main
 
 import (
@@ -6,16 +5,17 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"time"
 	"os"
+	"time"
 
-	"github.com/yoshitake-hamano/gocmd/line"
 	"github.com/chromedp/chromedp"
+	"github.com/yoshitake-hamano/gocmd/line"
 )
 
 type MyEvent struct {
-	Lat float64 `json:"lat"`
-	Lon float64 `json:"lon"`
+	Lat   float64 `json:"lat"`
+	Lon   float64 `json:"lon"`
+	Token string  `json:"token"`
 }
 
 func mindraURL(lat, lon float64) string {
@@ -33,9 +33,9 @@ func scrape(lat, lon float64) ([]byte, error) {
 		chromedp.Flag("log-level", "0"),
 	)
 	opts = appendExecAllocatorOptions(opts)
-	
+
 	allocCtx, _ := chromedp.NewExecAllocator(context.Background(), opts...)
-	
+
 	// create chrome instance
 	ctx, cancel := chromedp.NewContext(
 		allocCtx,
@@ -53,7 +53,7 @@ func scrape(lat, lon float64) ([]byte, error) {
 		chromedp.Click(`li[data-id="h1"]`, chromedp.ByQuery),
 		chromedp.Click(`li[data-id="h2"]`, chromedp.ByQuery),
 
-		chromedp.Sleep(time.Second * 5),
+		chromedp.Sleep(time.Second*5),
 		chromedp.Screenshot(`#map`, &imageBuf, chromedp.NodeVisible, chromedp.ByID),
 	)
 	if err != nil {
@@ -63,8 +63,8 @@ func scrape(lat, lon float64) ([]byte, error) {
 	return imageBuf, nil
 }
 
-func mainImpl(lat, lon float64) error {
-	fmt.Printf("lat=%f, lon=%f", lat, lon)
+func mainImpl(lat, lon float64, token string) error {
+	fmt.Printf("lat=%f, lon=%f, token=%s", lat, lon, token)
 
 	img, err := scrape(lat, lon)
 	if err != nil {
@@ -72,7 +72,7 @@ func mainImpl(lat, lon float64) error {
 	}
 
 	url := mindraURL(lat, lon)
-	err = line.NotifyLineImage(bytes.NewReader(img), "map.jpg", url, LINE_NOTIFY_TOKEN)
+	err = line.NotifyLineImage(bytes.NewReader(img), "map.jpg", url, token)
 	if err != nil {
 		fmt.Errorf("line.NotifyLineImage: %v", err)
 	}

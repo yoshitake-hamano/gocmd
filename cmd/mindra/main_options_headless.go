@@ -1,3 +1,4 @@
+//go:build !lambda
 // +build !lambda
 
 package main
@@ -21,6 +22,6 @@ func appendExecAllocatorOptions(opts []chromedp.ExecAllocatorOption) []chromedp.
 func main() {
 	fmt.Printf("lat=%f, lon=%f", MINDRA_LAT, MINDRA_LON)
 
-	err := mainImpl(MINDRA_LAT, MINDRA_LON)
+	err := mainImpl(MINDRA_LAT, MINDRA_LON, LINE_NOTIFY_TOKEN)
 	check(err)
 }

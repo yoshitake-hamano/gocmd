@@ -1,3 +1,4 @@
+//go:build lambda
 // +build lambda
 
 package main
@@ -31,8 +32,8 @@ func appendExecAllocatorOptions(opts []chromedp.ExecAllocatorOption) []chromedp.
 }
 
 func HandleRequest(ctx context.Context, e MyEvent) (string, error) {
-	param := fmt.Sprintf("lat=%f, lon=%f", e.Lat, e.Lon)
-	err := mainImpl(e.Lat, e.Lon)
+	param := fmt.Sprintf("lat=%f, lon=%f, token=%s", e.Lat, e.Lon, e.Token)
+	err := mainImpl(e.Lat, e.Lon, e.Token)
 	return param, err
 }
 
