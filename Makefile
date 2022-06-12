@@ -20,6 +20,10 @@ build-normal: ## Build normal binary
 deploy-lambda: build-lambda ## Deploy to AWS Lambda
 	cd binlambda; aws lambda update-function-code --no-cli-pager --function-name mindra --zip-file fileb://mindra.zip
 
+.PHONY: install
+install: ## Install bin files
+	cp bin/* $(HOME)/bin/
+
 .PHONY: clean
 clean: ## Clean
 	$(RM) binlambda/*
