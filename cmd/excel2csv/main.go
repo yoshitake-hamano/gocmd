@@ -1,9 +1,9 @@
 package main
 
 import (
+	"encoding/csv"
 	"flag"
 	"fmt"
-	"encoding/csv"
 	"github.com/tealeg/xlsx"
 	"io/ioutil"
 	"log"
@@ -33,27 +33,27 @@ func readSheet(excelFilePath, sheetName string) ([][]string, error) {
 		return nil, fmt.Errorf("not found sheet: %s", sheetName)
 	}
 
-    records := make([][]string, 0, len(sheet.Rows))
-    for r, _ := range sheet.Rows {
-        cols := make([]string, 0, len(sheet.Cols))
-        for c, _ := range sheet.Cols {
-            cell := sheet.Cell(r, c)
-            cols = append(cols, cell.Value)
-        }
-        records = append(records, cols)
-    }
-    return records, nil
+	records := make([][]string, 0, len(sheet.Rows))
+	for r, _ := range sheet.Rows {
+		cols := make([]string, 0, len(sheet.Cols))
+		for c, _ := range sheet.Cols {
+			cell := sheet.Cell(r, c)
+			cols = append(cols, cell.Value)
+		}
+		records = append(records, cols)
+	}
+	return records, nil
 }
 
 func writeRecords(records [][]string, csvFile *os.File) error {
-    return csv.NewWriter(csvFile).WriteAll(records)
+	return csv.NewWriter(csvFile).WriteAll(records)
 }
 
 func main() {
 	var (
 		excelFilePath = flag.String("excel", "variable.xlsx", "the excel file")
 		sheetName     = flag.String("sheet", "Sheet1", "the sheet name in the excel")
-        csvFilePath   = flag.String("csv", "-", "the csv file")
+		csvFilePath   = flag.String("csv", "-", "the csv file")
 		verbose       = flag.Bool("v", false, "verbose")
 	)
 	flag.Usage = func() {
@@ -76,12 +76,12 @@ func main() {
 	records, err := readSheet(*excelFilePath, *sheetName)
 	check("read excel", err)
 
-    csvFile := os.Stdout
-    if *csvFilePath != "-" {
-        csvFile, err = os.Open(*csvFilePath)
-        check("create csv", err)
-    }
+	csvFile := os.Stdout
+	if *csvFilePath != "-" {
+		csvFile, err = os.Create(*csvFilePath)
+		check("create csv", err)
+	}
 
-    err = writeRecords(records, csvFile)
-    check("excel to csv", err)
+	err = writeRecords(records, csvFile)
+	check("excel to csv", err)
 }
