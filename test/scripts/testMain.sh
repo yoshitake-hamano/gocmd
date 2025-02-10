@@ -4,6 +4,7 @@ BIN_DIR=../../bin
 HELLO=${BIN_DIR}/hello
 CREATEMOCK="${BIN_DIR}/createmock -arg"
 EXCELGO="${BIN_DIR}/excelgo"
+EXCELGANTT="${BIN_DIR}/excelgantt"
 
 function dumpStack() {
     local i=0
@@ -348,6 +349,21 @@ function testSuiteExcelgo() {
     testSuiteExcelgoReturnsNG
 }
 
+function testSuiteExcelganttReturnsOK() {
+    assertReturnsOKMultiArgs "${EXCELGANTT}" "-v -excel ../excelgantt/sched.xlsx -sheet Sheet1"
+}
+
+function testSuiteExcelganttReturnsNG() {
+    assertReturnsNGMultiArgs "${EXCELGANTT}" "-v -excel nofile.xlsx -sheet Sheet1"
+    assertReturnsNGMultiArgs "${EXCELGANTT}" "-v -excel ../excelgantt/sched.xlsx -sheet unknownSheet"
+}
+
+function testSuiteExcelgantt() {
+    testSuiteExcelganttReturnsOK
+    testSuiteExcelganttReturnsNG
+}
+
 testSuiteHello
 testSuiteCreatemock
 testSuiteExcelgo
+testSuiteExcelgantt
