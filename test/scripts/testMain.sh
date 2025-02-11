@@ -367,3 +367,5 @@ testSuiteHello
 testSuiteCreatemock
 testSuiteExcelgo
 testSuiteExcelgantt
+
+echo successed
