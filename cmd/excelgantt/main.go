@@ -291,7 +291,7 @@ func readExcel(excelFilePath, sheetName string) ([]Elem, error) {
 
 func main() {
 	var (
-		excelFilePath = flag.String("excel", "variable.xlsx", "the excel file path which defines template variable")
+		excelFilePath = flag.String("excel", "sched.xlsx", "the excel file path which specify schedule")
 		sheetName     = flag.String("sheet", "Sheet1", "the sheet name in the variable excel")
 		verbose       = flag.Bool("v", false, "verbose")
 	)
@@ -299,10 +299,10 @@ func main() {
 		o := flag.CommandLine.Output()
 		cmd := os.Args[0]
 		fmt.Fprintf(o, "Usage of %s:\n", cmd)
-		fmt.Fprintf(o, "  %s creates files from the variable excel and the template files\n", cmd)
+		fmt.Fprintf(o, "  %s creates plantuml gantt source code from the schedule excel\n", cmd)
 		flag.PrintDefaults()
 		fmt.Fprintf(o, "example:\n")
-		fmt.Fprintf(o, "  %s -excel variable.xlsx -target TARGET1 -template template -o build\n", cmd)
+		fmt.Fprintf(o, "  %s -excel sched.xlsx -sheet Sheet1\n", cmd)
 	}
 	flag.Parse()
 
