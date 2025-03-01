@@ -256,24 +256,45 @@ func readExcel(excelFilePath, sheetName string) ([]Elem, error) {
 		if i == 0 {
 			continue
 		}
-		id := r.Cells[idIndex].Value
+		id := ""
+		if idIndex < len(r.Cells) {
+			id = r.Cells[idIndex].Value
+		}
 		if id == "" {
 			seed := fmt.Sprintf("%d%v", i, r)
 			crc := crc32.ChecksumIEEE([]byte(seed))
 			id = strconv.FormatUint(uint64(crc), 16)
 		}
-		ct, err := getClassType(r.Cells[classIndex].Value)
-		if err != nil {
+		if classIndex >= len(r.Cells) {
 			continue
 		}
-		isr, _ := strconv.Atoi(r.Cells[isSameRowIndex].Value)
+		ct, err := getClassType(r.Cells[classIndex].Value)
+		if err != nil {
+			// skip unknown class
+			continue
+		}
+
 		var dor []string
-		if r.Cells[dependOnIndex].Value != "" {
+		if dependOnIndex < len(r.Cells) &&
+			r.Cells[dependOnIndex].Value != "" {
 			dor = strings.Split(r.Cells[dependOnIndex].Value, ",")
 		}
-		sr, _ := r.Cells[startIndex].GetTime(false)
-		er, _ := r.Cells[endIndex].GetTime(false)
-		cr, _ := strconv.Atoi(r.Cells[completedRateIndex].Value)
+		isr := 0
+		if isSameRowIndex < len(r.Cells) {
+			isr, _ = strconv.Atoi(r.Cells[isSameRowIndex].Value)
+		}
+		var sr time.Time
+		if startIndex < len(r.Cells) {
+			sr, _ = r.Cells[startIndex].GetTime(false)
+		}
+		var er time.Time
+		if endIndex < len(r.Cells) {
+			er, _ = r.Cells[endIndex].GetTime(false)
+		}
+		cr := 0
+		if completedRateIndex < len(r.Cells) {
+			cr, _ = strconv.Atoi(r.Cells[completedRateIndex].Value)
+		}
 		e := Elem{
 			id:            id,
 			class:         ct,
