@@ -315,10 +315,11 @@ func main() {
 		excelFilePath = flag.String("excel", "sched.xlsx", "the excel file path which specify schedule")
 		sheetName     = flag.String("sheet", "Sheet1", "the sheet name in the variable excel")
 		verbose       = flag.Bool("v", false, "verbose")
+		version       = flag.Bool("version", false, "version")
 	)
+	cmd := os.Args[0]
 	flag.Usage = func() {
 		o := flag.CommandLine.Output()
-		cmd := os.Args[0]
 		fmt.Fprintf(o, "Usage of %s:\n", cmd)
 		fmt.Fprintf(o, "  %s creates plantuml gantt source code from the schedule excel\n", cmd)
 		flag.PrintDefaults()
@@ -326,6 +327,11 @@ func main() {
 		fmt.Fprintf(o, "  %s -excel sched.xlsx -sheet Sheet1\n", cmd)
 	}
 	flag.Parse()
+
+	if *version {
+		fmt.Printf("%s 0.3.0\n", cmd)
+		return
+	}
 
 	if *verbose {
 		log.SetOutput(os.Stderr)
