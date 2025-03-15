@@ -351,6 +351,7 @@ function testSuiteExcelgo() {
 
 function testSuiteExcelganttReturnsOK() {
     assertReturnsOKMultiArgs "${EXCELGANTT}" "-v -excel ../excelgantt/sched.xlsx -sheet Sheet1"
+    assertReturnsOKMultiArgs "${EXCELGANTT}" "-v -excel ../excelgantt/color.xlsx -sheet Sheet1"
 }
 
 function testSuiteExcelganttReturnsNG() {

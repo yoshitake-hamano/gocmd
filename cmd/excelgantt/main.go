@@ -31,6 +31,7 @@ const (
 	Start         HeadType = "Start"
 	End           HeadType = "End"
 	CompletedRate HeadType = "Completed rate"
+	Color         HeadType = "Color"
 )
 
 type ClassType string
@@ -50,6 +51,7 @@ type Elem struct {
 	start         time.Time
 	end           time.Time
 	completedRate int
+	color         string
 }
 
 func plantUmlId(e Elem) string {
@@ -79,6 +81,12 @@ func createPlantUmlTask(e Elem, buf *strings.Builder) {
 	buf.WriteString(strconv.Itoa(e.completedRate))
 	buf.WriteString("%% completed")
 	buf.WriteString("\n")
+	if e.color != "" {
+		buf.WriteString(plantUmlId(e))
+		buf.WriteString(" is colored in ")
+		buf.WriteString(e.color)
+		buf.WriteString("\n")
+	}
 }
 
 func findEarliestStartTime(elems []Elem) (time.Time, error) {
@@ -190,7 +198,7 @@ func getColIndex(headCells []*xlsx.Cell, h HeadType) (int, error) {
 			return i, nil
 		}
 	}
-	return 0, fmt.Errorf("not found head: %s", h)
+	return -1, fmt.Errorf("not found head: %s", h)
 }
 
 func getClassType(t string) (ClassType, error) {
@@ -250,6 +258,7 @@ func readExcel(excelFilePath, sheetName string) ([]Elem, error) {
 	if err != nil {
 		return nil, err
 	}
+	colorIndex, _ := getColIndex(head.Cells, Color)
 
 	arr := make([]Elem, 0, sheet.MaxRow)
 	for i, r := range sheet.Rows {
@@ -295,6 +304,10 @@ func readExcel(excelFilePath, sheetName string) ([]Elem, error) {
 		if completedRateIndex < len(r.Cells) {
 			cr, _ = strconv.Atoi(r.Cells[completedRateIndex].Value)
 		}
+		clr := ""
+		if 0 <= colorIndex && colorIndex < len(r.Cells) {
+			clr = r.Cells[colorIndex].Value
+		}
 		e := Elem{
 			id:            id,
 			class:         ct,
@@ -304,6 +317,7 @@ func readExcel(excelFilePath, sheetName string) ([]Elem, error) {
 			start:         sr,
 			end:           er,
 			completedRate: cr,
+			color:         clr,
 		}
 		arr = append(arr, e)
 	}
